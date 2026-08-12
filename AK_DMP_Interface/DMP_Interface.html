@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AK Region Data Management Plan — Interface</title>
+<style>
+:root{
+  --paper:#F7F5EF;
+  --paper-dim:#EFEBE1;
+  --ink:#1C2B29;
+  --ink-soft:#4B5D59;
+  --spruce:#22403C;
+  --spruce-2:#2E534D;
+  --spruce-3:#3C6960;
+  --rust:#B15A29;
+  --rust-dark:#93481F;
+  --glacier:#E1EAE7;
+  --line:#CBD6D0;
+  --line-soft:#DCE4DF;
+  --ok:#3E6E52;
+  --warn:#B15A29;
+  --white:#FFFFFF;
+  --shadow: 0 1px 2px rgba(28,43,41,0.06), 0 4px 14px rgba(28,43,41,0.06);
+  --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: 'Consolas', 'SF Mono', Menlo, monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--sans);
+  background:var(--paper-dim);
+  color:var(--ink);
+  font-size:14.5px;
+  line-height:1.5;
+}
+::selection{background:var(--rust);color:#fff;}
+
+/* ---------- Layout shell ---------- */
+#shell{display:flex; min-height:100vh;}
+
+/* ---------- Sidebar ---------- */
+#sidebar{
+  width:270px; flex:0 0 270px;
+  background:var(--spruce);
+  color:#EAF1EE;
+  position:sticky; top:0; height:100vh;
+  overflow-y:auto;
+  display:flex; flex-direction:column;
+}
+#sidebar-head{
+  padding:26px 22px 18px 22px;
+  border-bottom:1px solid rgba(255,255,255,0.12);
+  position:relative;
+  overflow:hidden;
+}
+#sidebar-head svg{position:absolute; top:-10px; right:-30px; opacity:0.16; width:170px; height:170px;}
+#sidebar-head .eyebrow{
+  font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#9FC2B7; margin:0 0 6px 0;
+}
+#sidebar-head h1{
+  font-family:var(--serif); font-weight:600; font-size:21px; line-height:1.25; margin:0 0 4px 0; color:#fff;
+  position:relative; z-index:1;
+}
+#sidebar-head .sub{font-size:12.5px; color:#B9D2C9; position:relative; z-index:1;}
+
+#nav{list-style:none; margin:0; padding:10px 0; flex:1;}
+#nav li{margin:0;}
+#nav button{
+  display:flex; align-items:baseline; gap:10px; width:100%; text-align:left;
+  background:none; border:none; color:#CFE2DB; font-family:var(--sans);
+  padding:10px 22px; font-size:13.4px; cursor:pointer; border-left:3px solid transparent;
+  transition:background .12s ease, color .12s ease, border-color .12s ease;
+}
+#nav button .num{font-family:var(--mono); font-size:11px; color:#7FA398; min-width:16px;}
+#nav button:hover{background:rgba(255,255,255,0.06); color:#fff;}
+#nav li.active button{background:rgba(255,255,255,0.09); color:#fff; border-left-color:var(--rust); font-weight:600;}
+#nav li.active button .num{color:#F0B189;}
+#nav button .status{margin-left:auto; font-size:10.5px; color:#6E9186;}
+#nav li.complete button .status{color:#8FCB9F;}
+#nav li.complete button .status::before{content:"✓ "; }
+
+#sidebar-foot{padding:16px 22px 20px 22px; border-top:1px solid rgba(255,255,255,0.12); font-size:11.5px; color:#8AAA9F;}
+#sidebar-foot a{color:#BEDCD1;}
+
+/* ---------- Main ---------- */
+#main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+#topbar{
+  position:sticky; top:0; z-index:5;
+  background:var(--paper); border-bottom:1px solid var(--line);
+  padding:12px 34px; display:flex; align-items:center; gap:14px;
+  box-shadow:var(--shadow);
+}
+#topbar .proj-name{font-family:var(--serif); font-size:15.5px; color:var(--ink); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+#topbar .proj-name.placeholder{color:var(--ink-soft); font-style:italic;}
+#save-status{font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; white-space:nowrap;}
+#save-status .dot{width:7px; height:7px; border-radius:50%; background:var(--ok); display:inline-block;}
+.btn{
+  font-family:var(--sans); font-size:13px; font-weight:600; border-radius:5px; border:1px solid transparent;
+  padding:9px 16px; cursor:pointer; white-space:nowrap; transition:transform .06s ease, box-shadow .12s ease, background .12s ease;
+}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--rust); color:#fff;}
+.btn-primary:hover{background:var(--rust-dark);}
+.btn-ghost{background:transparent; color:var(--spruce); border-color:var(--line);}
+.btn-ghost:hover{background:var(--glacier);}
+.btn-sm{padding:6px 11px; font-size:12px;}
+
+#content{padding:34px 40px 90px 40px; max-width:880px; width:100%; margin:0 auto;}
+.panel{display:none;}
+.panel.active{display:block; animation:fadein .18s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+.panel-head{margin-bottom:26px; padding-bottom:16px; border-bottom:2px solid var(--spruce);}
+.panel-head .eyebrow{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--rust); font-weight:700; margin-bottom:6px;}
+.panel-head h2{font-family:var(--serif); font-size:26px; margin:0 0 8px 0; color:var(--spruce);}
+.panel-head p{margin:0; color:var(--ink-soft); font-size:13.5px; max-width:640px;}
+
+.card{
+  background:var(--white); border:1px solid var(--line); border-radius:8px;
+  padding:22px 24px; margin-bottom:20px; box-shadow:var(--shadow);
+}
+.card h3{
+  font-family:var(--serif); font-size:16.5px; margin:0 0 4px 0; color:var(--ink);
+  display:flex; align-items:center; gap:8px;
+}
+.card .card-desc{font-size:12.5px; color:var(--ink-soft); margin:0 0 16px 0; line-height:1.5;}
+.card + .card{margin-top:20px;}
+
+.grid{display:grid; gap:14px 18px;}
+.grid.cols-2{grid-template-columns:1fr 1fr;}
+.grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+@media (max-width:640px){.grid.cols-2,.grid.cols-3{grid-template-columns:1fr;}}
+
+label.field{display:block; margin-bottom:2px;}
+label.field .lbl{
+  display:block; font-size:12px; font-weight:600; color:var(--ink); margin-bottom:5px; letter-spacing:.01em;
+}
+label.field .lbl .req{color:var(--rust); margin-left:2px;}
+label.field .hint{display:block; font-size:11px; color:var(--ink-soft); margin-top:4px; line-height:1.4; font-weight:400;}
+
+input[type=text], input[type=email], input[type=date], input[type=url], input[type=tel], select, textarea{
+  width:100%; font-family:var(--sans); font-size:13.5px; color:var(--ink);
+  border:1px solid var(--line); border-radius:5px; padding:9px 10px; background:#fff;
+  transition:border-color .12s ease, box-shadow .12s ease;
+}
+input:focus, select:focus, textarea:focus{
+  outline:none; border-color:var(--spruce-3); box-shadow:0 0 0 3px rgba(60,105,96,0.14);
+}
+textarea{resize:vertical; min-height:70px; line-height:1.5;}
+select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; background-position:right 10px center;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234B5D59'/%3E%3C/svg%3E");
+  padding-right:28px;}
+
+.chk-row{display:flex; align-items:flex-start; gap:9px; padding:9px 0;}
+.chk-row input[type=checkbox]{margin-top:2px; width:16px; height:16px; accent-color:var(--spruce-2); flex:0 0 auto;}
+.chk-row .chk-label{font-size:13px; color:var(--ink);}
+.chk-row .chk-label .small{display:block; font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+.inline-with-field{display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;}
+.inline-with-field > div{flex:1; min-width:180px;}
+
+/* repeatable groups */
+.rep-list{display:flex; flex-direction:column; gap:12px;}
+.rep-item{
+  border:1px solid var(--line-soft); border-radius:7px; padding:16px 16px 14px 16px; background:var(--paper);
+  position:relative;
+}
+.rep-item .rep-item-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.rep-item .rep-item-title{font-size:12px; font-weight:700; color:var(--spruce); text-transform:uppercase; letter-spacing:.05em;}
+.rep-remove{
+  background:none; border:none; color:var(--rust); font-size:12px; cursor:pointer; font-weight:600; padding:2px 6px;
+  border-radius:4px;
+}
+.rep-remove:hover{background:#F3E1D6;}
+.rep-add{
+  align-self:flex-start; background:var(--glacier); color:var(--spruce); border:1px dashed var(--spruce-3);
+  border-radius:6px; padding:9px 14px; font-size:12.5px; font-weight:600; cursor:pointer; margin-top:6px;
+}
+.rep-add:hover{background:#D4E5DF;}
+.rep-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic; padding:8px 2px;}
+
+.subsection-label{
+  font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--spruce-2);
+  margin:18px 0 8px 0; padding-top:14px; border-top:1px solid var(--line-soft);
+}
+.subsection-label:first-child{border-top:none; padding-top:0; margin-top:0;}
+.subsection-desc{font-size:12px; color:var(--ink-soft); margin:-4px 0 10px 0;}
+
+.note{
+  font-size:12px; color:var(--ink-soft); background:var(--glacier); border-left:3px solid var(--spruce-3);
+  padding:9px 12px; border-radius:4px; margin-top:14px; line-height:1.5;
+}
+.note code{font-family:var(--mono); font-size:11px; background:rgba(0,0,0,0.06); padding:1px 4px; border-radius:3px;}
+
+/* footer nav */
+#panel-footer{
+  display:flex; justify-content:space-between; align-items:center; margin-top:30px; padding-top:20px; border-top:1px solid var(--line);
+}
+
+/* review panel */
+.review-group{margin-bottom:22px;}
+.review-group h4{font-family:var(--serif); font-size:15px; color:var(--spruce); margin:0 0 10px 0;}
+.review-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+.review-table td{padding:6px 8px; border-bottom:1px solid var(--line-soft); vertical-align:top;}
+.review-table td:first-child{width:220px; color:var(--ink-soft); font-weight:600;}
+.missing-list{list-style:none; margin:0; padding:0;}
+.missing-list li{padding:7px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px; display:flex; gap:8px;}
+.missing-list li::before{content:"—"; color:var(--rust);}
+.all-good{color:var(--ok); font-weight:600; font-size:13.5px;}
+
+/* toast */
+#toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:#fff; padding:11px 20px; border-radius:6px; font-size:13px;
+  opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50; box-shadow:var(--shadow);
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* modal (import) */
+#modal-overlay{
+  display:none; position:fixed; inset:0; background:rgba(28,43,41,0.45); z-index:60;
+  align-items:center; justify-content:center;
+}
+#modal-overlay.show{display:flex;}
+#modal{background:#fff; border-radius:9px; padding:26px 28px; max-width:440px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+#modal h3{font-family:var(--serif); margin:0 0 10px 0; color:var(--spruce);}
+#modal p{font-size:13px; color:var(--ink-soft); line-height:1.5;}
+#modal .modal-actions{display:flex; gap:10px; margin-top:18px; justify-content:flex-end;}
+
+@media print{
+  #sidebar,#topbar,.rep-add,.rep-remove,#panel-footer{display:none !important;}
+  .panel{display:block !important;}
+}
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <nav id="sidebar">
+    <div id="sidebar-head">
+      <svg viewBox="0 0 200 200"><g fill="none" stroke="#EAF1EE" stroke-width="2">
+        <path d="M-10 150 Q 40 100 80 140 T 210 120"/>
+        <path d="M-10 170 Q 40 130 90 165 T 210 150"/>
+        <path d="M-10 190 Q 50 160 100 185 T 210 175"/>
+      </g></svg>
+      <div class="eyebrow">USFWS</div>
+      <h1>Data Management Plan</h1>
+      <div class="sub">Interface v1.3 · replaces the Word template</div>
+    </div>
+    <ul id="nav"></ul>
+    <div id="sidebar-foot">
+      Fields mirror <em>AK_DMP_Template_v1.3</em>. Guidance from the Alaska Region Interim Data Management Guide still applies.
+    </div>
+  </nav>
+
+  <div id="main">
+    <div id="topbar">
+      <div class="proj-name placeholder" id="proj-name-display">Untitled project</div>
+      <div id="save-status"><span class="dot"></span><span id="save-status-text">Draft saved locally</span></div>
+      <button class="btn btn-ghost btn-sm" id="btn-import">Load JSON…</button>
+      <button class="btn btn-ghost btn-sm" id="btn-clear">Clear form</button>
+      <button class="btn btn-primary" id="btn-export">Export DMP data (.json)</button>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <h3 id="modal-title">Load a saved DMP file</h3>
+    <p id="modal-body">Choose a <code>dmp_data.json</code> file exported earlier from this interface to resume editing.</p>
+    <input type="file" id="file-input" accept="application/json,.json" style="margin-top:10px; font-size:12.5px;">
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" id="modal-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   STATE
+   Shape matches dmp_json_to_dataframe.py exactly -- do not rename keys
+   without updating that file too.
+   ========================================================================= */
+const STORAGE_KEY = 'ak_dmp_interface_draft_v1';
+
+function emptyContact(){ return {firstName:"",lastName:"",position:"",email:"",phone:"",org:""}; }
+function emptyOtherContact(){ return {firstName:"",lastName:"",position:"",email:"",phone:"",role:"",org:""}; }
+function emptyOriginator(){ return {firstName:"",lastName:"",email:"",nonDOI:false,org:""}; }
+function emptyMetaAuthor(){ return {firstName:"",lastName:"",email:"",org:""}; }
+function emptyRepo(){ return {name:"",url:""}; }
+function emptyRecordsSchedule(){ return {schedule:"",type:"",disposition:""}; }
+function emptySourceData(){ return {description:"",location:""}; }
+function emptySample(){ return {name:"",description:"",label:"",qaqc:"",loc:"",chain:"",fate:"",products:""}; }
+function emptyProduct(){
+  return {
+    title:"", name:"", url:"", fileVersioning:"", metaURL:"", skipMeta:false,
+    resourceType:"", format:"", formatOther:"", abstract:"",
+    originators:[emptyOriginator()],
+    qualityAssurance:"", qualityControl:"", resources:"",
+    metaAuthors:[emptyMetaAuthor()],
+    restriction:"", restrictionJustification:"", additional:"",
+    spatialMatchesProject:true, spatialDesc:"", spatialURL:""
+  };
+}
+
+function defaultState(){
+  return {
+    dmp:{version:"1.3", createDate:"", creatorFirstName:"", creatorLastName:"", creatorEmail:"",
+         updateDate:"", updaterFirstName:"", updaterLastName:"", updaterEmail:"",
+         submitDate:"", dmFirstName:"", dmLastName:"", dmEmail:"", documentPath:""},
+    project:{region:"", programs:[], costCenters:[], title:"", startDate:"", endDate:"", ongoing:false,
+             abstract:"", keywords:"", uidList:"", spatialDesc:"", spatialURL:""},
+    contacts:{
+      primary:emptyContact(), steward:emptyContact(),
+      custodian:Object.assign(emptyContact(),{nonDOI:false}),
+      trustee:{firstName:"",lastName:"",position:"",email:"",phone:""},
+      other:[]
+    },
+    metadataStandards:{mdJSON:false, other:false, otherType:""},
+    dataStandards:[],
+    storage:{
+      oneDrive:{checked:false,url:""}, teams:{checked:false,url:""},
+      external:{checked:false,loc:""}, network:{checked:false,url:""},
+      other:{checked:false,loc:""},
+      locationURL:"", backupFreq:"", backupFreqOther:"", filePermissions:"", reviewSchedule:"Annual"
+    },
+    distribution:{rdrChecked:false, rdrURL:"", shortTitle:"", repositories:[], recordsSchedules:[]},
+    products:[],
+    sourceData:[],
+    samples:[]
+  };
+}
+
+let state = defaultState();
+
+/* =========================================================================
+   OPTION LISTS  (copied verbatim from AK_DMP_Template_v1_3.docx content controls)
+   ========================================================================= */
+const OPT_REGION = ["1 – Pacific Region","2 – Southwest Region","3 – Midwest Region","4 – Southeast Region",
+  "5 – Northeast Region","6 – Mountain-Prairie Region","7 – Alaska Region","8 – Pacific Southwest Region"];
+
+const OPT_PROGRAM = ["Ecological Services","Fish and Aquatic Conservation","Migratory Birds",
+  "National Wildlife Refuge System","Office of Subsistence Management","Science Applications"];
+
+const OPT_COST_CENTER = [
+"FES AK: Assistant Regional Director (FF07C00000)","FES AK: Anchorage Fish and Wildlife Field Office (FF07CAAN00)",
+"FES AK: Conservation Genetics Laboratory (FF07CACG00)","FES AK: Fairbanks Fish and Wildlife Field Office (FF07CAFB00)",
+"FES AK: Juneau Fish and Wildlife Field Office (FF07CAJN00)","FES AK: Kenai Fish and Wildlife Field Office (FF07CAKN00)",
+"FES AK: Marine Mammals Management Office (FF07CAMM00)",
+"MB AK: Assistant Regional Director-Climate Change & Science Applications (FF07S00000)",
+"MB AK: Division of Migratory Birds (FF07M04000)","MB AK: Eagle Raptor Management Program (FF07M14100)",
+"MB AK: International Affairs (FF07D0IA00)","MB AK: Land Bird Program (FF07M14500)","MB AK: Outreach (FF07M14800)",
+"MB AK: Quantitative Ecology (FF07M14600)","MB AK: Sea Duck Joint Venture (FF07M14900)","MB AK: Seabirds Program (FF07M14400)",
+"MB AK: Shorebird Program (FF07M14200)","MB AK: Waterfowl Program (FF07M14300)","Arctic NWR (FF07RARC00)",
+"Alaska Maritime NWR (FF07RAM000)","Alaska Peninsula/Becharof NWR (FF07RAP000)","Alaska Peninsula NWR (FF07RAPN00)",
+"Becharof NWR (FF07RAPB00)","Innoko NWR (FF07RINN00)","Izembek NWR (FF07RIZM00)","Kanuti NWR (FF07RKAN00)",
+"Kenai NWR (FF07RKNA00)","Kodiak NWR (FF07RKDK00)","Koyukuk/Nowitna NWR (FF07RKU000)","Koyukuk NWR (FF07RKUK00)",
+"Nowitna NWR (FF07RKUN00)","Selawik NWR (FF07RSWK00)","Tetlin NWR (FF07RTET00)","Togiak NWR (FF07RTGK00)",
+"Yukon Delta NWR (FF07RYKD00)","Yukon Flats NWR (FF07RYKF00)","NWRS AK: Conservation Planning and Policy Branch (FF07R06000)",
+"NWRS AK: Division of Budget and Facilities Management (FF07R04000)","NWRS AK: Division of Natural Resources (FF07R02000)",
+"NWRS AK: Division of Fire Management (FF07R03000)","NWRS AK: Division of Visitor Services (FF07R08000)",
+"NWRS AK: Inventory and Monitoring Branch (FF07R02M00)","NWRS AK: Office of Refuge Law Enforcement (FF07R09000)",
+"NWRS AK: Pacific States Engineering Group (FF01G08900)","NWRS AK: Division of Realty (FF07R05000)",
+"NWRS AK: Regional Office (FF07R00000)","NWRS AK: Water Resources Branch (FF07R02W00)",
+"OSM: Assistant Regional Director-Subsistence Management (FF07J00000)"
+];
+
+const OPT_META_OTHER = ["Not Applicable","CSDGM (FGDC)","Dublin Core","ISO 19115-1","ISO 19115-2","ISO 19115-3",
+  "POD (Project Open Data) / DCAT 2014"];
+
+const OPT_DATA_STANDARD = ["Not Applicable","Calendar Year","Congressional District","County Name",
+"Critical Habitat Data Specifications","Digital Orthophoto Quad","Digital Raster Graphic",
+"Dun & Bradstreet Universal Numbering System (DUNS) Number","Ecosystem Unit Boundaries","Ecosystem Unit Name",
+"Ecosystem Unit Number","Fire Unit Identifier","Fiscal Year","Geopolitical Entity Name and Code",
+"Habitat Conservation Plan Spatial Data Specifications","Hydrography (DLG)","Hydrologic Units","Hypsography (DLG)",
+"Interior-Fish and Wildlife Service (IFWS) Number","International Telephone Number","Latitude and Longitude",
+"Literal Code","Mailing Address","Office Names and Acronyms","Organization Code","Organization Name",
+"Organization Name Abbreviation","Organization Type","Organization Type Acronym","Personal Property Number",
+"Political Boundaries (DLG)","Program Names and Acronyms","Public Land Survey System; PLSS (DLG)",
+"Real Property Number","Region Number","Report To Organization Code","Riparian Areas","Soils",
+"State Name and Alpha Code","State Numeric Code","Telephone Number","Transportation (DLG)","Wetlands",
+"Wind Direction","Wind Speed"];
+
+const OPT_BACKUP_FREQ = ["Hourly","Daily","Weekly","Monthly","Other"];
+const OPT_REVIEW_SCHEDULE = ["Annual","Biannual","Quarterly","Monthly","Weekly","Daily"];
+const OPT_REPO_NAME = ["ArcGIS Online","Arctic Data Center","Avian Knowledge Network","eBird","FWS InsideMaps",
+  "GeoPlatform","MoveBank","USFWS ServCat","USGS ScienceBase","Other"];
+const OPT_RECORDS_SCHEDULE = [
+"PERM-250   Biological Monitoring Files   (N1-022-05-01/101)","PERM-540   Bird Banding Survey   (NC1-22-78-1/28)",
+"PERM-542   Breeding Bird Survey   (NC1-22-78-1/29)","PERM-543   Band Issuance Records   (NC1-22-78-1/25)",
+"PROJ-100   Project Files   (NC1-22-78-1/37)","PROJ-205   Research Studies   (N1-022-05-01/201)",
+"PROJ-240   Statistical Information Files   (NC1-22-78-1/41)","RPTS-311   Narrative Reports   (NC1-22-78-1/65)",
+"RPTS-362   Fish and Wildlife Surveys   (N1-022-05-01/189)"];
+const OPT_RESOURCE_TYPE = ["application","collection","document","feature","map","geographicDataset",
+  "photographicImage","presentation","product","publication","report","software","tabularDataset"];
+const OPT_FORMAT = ["csv","txt","json","tsv","log","pdf","db","db3","shapefile","geodatabase","geoJSON",
+  "geopackage","GeoTiff","tiff","png","jpeg","bmp","PCM-WAVE","Broadcast-WAVE","DSD","PCM",
+  "uncompiled source code","disribution file (.exe)","other"];
+const OPT_RESTRICTION = ["open access","limited access","sensitive/protected","restricted"];
+const OPT_CONTACT_ROLE = ["administrator","author","client","coAuthor","collaborator","contributor",
+  "coPrincipalInvestigator","curator","custodian","distributor","editor","funder","logistics","mediator",
+  "observer","originator","owner","pointOfContact","principalInvestigator","processor","publisher",
+  "resourceProvider","rightsHolder","sponsor","stakeholder","user"];
+
+/* =========================================================================
+   SMALL DOM HELPERS
+   ========================================================================= */
+function h(tag, attrs, children){
+  const node = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k === 'class') node.className = attrs[k];
+    else if(k === 'html') node.innerHTML = attrs[k];
+    else if(k.startsWith('on') && typeof attrs[k] === 'function') node[k] = attrs[k];
+    else node.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(c => { if(c) node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return node;
+}
+
+function fieldWrap(labelText, required, hint, inputEl){
+  const label = h('label', {class:'field'});
+  const lbl = h('span', {class:'lbl'}, [labelText, required ? h('span',{class:'req'},['*']) : null]);
+  label.appendChild(lbl);
+  label.appendChild(inputEl);
+  if(hint) label.appendChild(h('span',{class:'hint'},[hint]));
+  return label;
+}
+
+function textInput(obj, key, opts){
+  opts = opts || {};
+  const inp = h('input', {type:opts.type || 'text', placeholder:opts.placeholder || ''});
+  inp.value = obj[key] || '';
+  inp.addEventListener('input', () => { obj[key] = inp.value; onDirty(); });
+  return inp;
+}
+
+function textareaInput(obj, key, opts){
+  opts = opts || {};
+  const inp = h('textarea', {rows: opts.rows || 3, placeholder:opts.placeholder || ''});
+  inp.value = obj[key] || '';
+  inp.addEventListener('input', () => { obj[key] = inp.value; onDirty(); });
+  return inp;
+}
+
+function selectInput(obj, key, options, opts){
+  opts = opts || {};
+  const sel = h('select', {});
+  sel.appendChild(h('option', {value:''}, [opts.placeholder || 'Select...']));
+  options.forEach(o => sel.appendChild(h('option', {value:o}, [o])));
+  sel.value = obj[key] || '';
+  sel.addEventListener('change', () => { obj[key] = sel.value; onDirty(); if(opts.onChange) opts.onChange(sel.value); });
+  return sel;
+}
+
+let comboIdCounter = 0;
+function comboInput(obj, key, options, opts){
+  opts = opts || {};
+  comboIdCounter++;
+  const listId = 'combo-list-' + comboIdCounter;
+  const wrap = document.createDocumentFragment();
+  const dl = h('datalist', {id:listId});
+  options.forEach(o => dl.appendChild(h('option', {value:o})));
+  const inp = h('input', {type:'text', list:listId, placeholder:opts.placeholder || 'Select or type your own...'});
+  inp.value = obj[key] || '';
+  inp.addEventListener('input', () => { obj[key] = inp.value; onDirty(); });
+  wrap.appendChild(inp);
+  wrap.appendChild(dl);
+  return wrap;
+}
+
+function checkboxRow(labelText, subText, obj, key, opts){
+  opts = opts || {};
+  const cb = h('input', {type:'checkbox'});
+  cb.checked = !!obj[key];
+  cb.addEventListener('change', () => { obj[key] = cb.checked; onDirty(); if(opts.onChange) opts.onChange(cb.checked); });
+  const row = h('label', {class:'chk-row'}, [
+    cb,
+    h('span', {class:'chk-label'}, [labelText, subText ? h('span',{class:'small'},[subText]) : null])
+  ]);
+  return row;
+}
+
+function card(titleText, descText, children){
+  const c = h('card' in {} ? 'div' : 'div', {class:'card'});
+  if(titleText) c.appendChild(h('h3', {}, [titleText]));
+  if(descText) c.appendChild(h('p', {class:'card-desc'}, [descText]));
+  (children||[]).forEach(ch => ch && c.appendChild(ch));
+  return c;
+}
+
+function grid(cols, children){
+  const g = h('div', {class:'grid cols-'+cols});
+  (children||[]).forEach(c => c && g.appendChild(c));
+  return g;
+}
+
+/* =========================================================================
+   REPEATABLE LIST HELPER
+   Renders `array` inside `container`, using `itemRenderFn(item, index)` to
+   build each item's DOM. Handles add / remove and re-renders just this
+   container (not the whole page) so unrelated inputs keep focus.
+   ========================================================================= */
+function renderRepeatable(container, array, opts){
+  container.innerHTML = '';
+  const list = h('div', {class:'rep-list'});
+  if(array.length === 0 && opts.emptyText){
+    list.appendChild(h('div', {class:'rep-empty'}, [opts.emptyText]));
+  }
+  array.forEach((item, idx) => {
+    const itemBody = opts.renderItem(item, idx);
+    const head = h('div', {class:'rep-item-head'}, [
+      h('span', {class:'rep-item-title'}, [opts.itemLabel(item, idx)]),
+      (array.length > (opts.minItems||0)) ? h('button', {type:'button', class:'rep-remove', onclick:() => {
+        array.splice(idx,1); onDirty(); renderRepeatable(container, array, opts);
+      }}, ['Remove']) : null
+    ]);
+    const wrap = h('div', {class:'rep-item'}, [head, itemBody]);
+    list.appendChild(wrap);
+  });
+  container.appendChild(list);
+  const addBtn = h('button', {type:'button', class:'rep-add', onclick:() => {
+    array.push(opts.makeNew());
+    onDirty();
+    renderRepeatable(container, array, opts);
+  }}, [opts.addLabel || '+ Add another']);
+  container.appendChild(addBtn);
+}
+
+/* =========================================================================
+   SECTION DEFINITIONS
+   ========================================================================= */
+const SECTIONS = [
+  {id:'dmp', label:'DMP Information', build:buildDmpPanel},
+  {id:'project', label:'Project Details', build:buildProjectPanel},
+  {id:'contacts', label:'Personnel & Contacts', build:buildContactsPanel},
+  {id:'metadata', label:'Metadata & Data Standards', build:buildMetadataPanel},
+  {id:'storage', label:'Storage, Backup & Review', build:buildStoragePanel},
+  {id:'distribution', label:'Distribution & Records', build:buildDistributionPanel},
+  {id:'products', label:'Data Products', build:buildProductsPanel},
+  {id:'source', label:'Source Data', build:buildSourceDataPanel},
+  {id:'samples', label:'Physical Samples', build:buildSamplesPanel},
+  {id:'review', label:'Review & Export', build:buildReviewPanel},
+];
+
+function panelHead(eyebrow, title, desc){
+  return h('div', {class:'panel-head'}, [
+    h('div', {class:'eyebrow'}, [eyebrow]),
+    h('h2', {}, [title]),
+    h('p', {}, [desc])
+  ]);
+}
+
+function panelFooter(idx){
+  const foot = h('div', {id:'panel-footer'});
+  const prev = SECTIONS[idx-1];
+  const next = SECTIONS[idx+1];
+  foot.appendChild(prev ? h('button', {class:'btn btn-ghost', onclick:() => showSection(prev.id)}, ['← ' + prev.label]) : h('span'));
+  foot.appendChild(next ? h('button', {class:'btn btn-primary', onclick:() => showSection(next.id)}, [next.label + ' →']) : h('span'));
+  return foot;
+}
+
+/* ---------- 1. DMP Information ---------- */
+function buildDmpPanel(idx){
+  const p = h('div', {class:'panel', id:'panel-dmp'});
+  p.appendChild(panelHead('Section 1', 'DMP Information',
+    'Basic information about who created and maintains this data management plan.'));
+
+  p.appendChild(card('DMP Creation', null, [
+    grid(3, [
+      fieldWrap('Date created', true, 'yyyy-mm-dd', textInput(state.dmp,'createDate',{type:'date'})),
+      fieldWrap('Creator first name', true, null, textInput(state.dmp,'creatorFirstName')),
+      fieldWrap('Creator last name', true, null, textInput(state.dmp,'creatorLastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Creator email', true, null, textInput(state.dmp,'creatorEmail',{type:'email'})),
+    ])
+  ]));
+
+  p.appendChild(card('DMP Last Updated', 'Optional — fill in if this plan has been revised since creation.', [
+    grid(3, [
+      fieldWrap('Date last updated', false, 'yyyy-mm-dd', textInput(state.dmp,'updateDate',{type:'date'})),
+      fieldWrap('Updater first name', false, null, textInput(state.dmp,'updaterFirstName')),
+      fieldWrap('Updater last name', false, null, textInput(state.dmp,'updaterLastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Updater email', false, null, textInput(state.dmp,'updaterEmail',{type:'email'})),
+    ])
+  ]));
+
+  p.appendChild(card('Data Manager Review', 'This section is completed by the Program Data Manager.', [
+    grid(3, [
+      fieldWrap('Review / submission date', false, 'yyyy-mm-dd', textInput(state.dmp,'submitDate',{type:'date'})),
+      fieldWrap('Data manager first name', false, null, textInput(state.dmp,'dmFirstName')),
+      fieldWrap('Data manager last name', false, null, textInput(state.dmp,'dmLastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Data manager email', false, null, textInput(state.dmp,'dmEmail',{type:'email'})),
+    ])
+  ]));
+
+  p.appendChild(card('Record of this Plan', 'Optional. If you keep a saved copy of this plan (e.g. an exported PDF or Word doc in your project folder), note its path here — it will be listed as a project product, same as the old Word-based workflow.', [
+    fieldWrap('Path to saved DMP record', false, 'e.g. \\\\ifw7ro-file\\mbm\\mbmra_007_project\\documents\\DMP.pdf', textInput(state.dmp,'documentPath'))
+  ]));
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 2. Project Details ---------- */
+function buildProjectPanel(idx){
+  const proj = state.project;
+  const p = h('div', {class:'panel', id:'panel-project'});
+  p.appendChild(panelHead('Section 2', 'Project Details',
+    'Projects are discrete efforts with defined objectives or goals — the DMP is the communication document for your project team and data management team.'));
+
+  const progContainer = h('div');
+  const ccContainer = h('div');
+
+  p.appendChild(card('Program & Cost Center', 'Add more than one if the project spans multiple programs or cost centers.', [
+    h('div', {class:'subsection-label'}, ['FWS Region *']),
+    h('div', {style:'margin-bottom:4px;'}, [selectInput(proj,'region',OPT_REGION,{placeholder:'Select a region...'})]),
+    h('div', {class:'subsection-label'}, ['FWS Program *']),
+    progContainer,
+    h('div', {class:'subsection-label'}, ['Cost Center *']),
+    ccContainer,
+  ]));
+  renderRepeatable(progContainer, proj.programs, {
+    itemLabel:(v,i)=>'Program '+(i+1), emptyText:'No program added yet.', addLabel:'+ Add a program',
+    makeNew:()=>'',
+    renderItem:(v,i)=> {
+      const sel = selectInput({get val(){return proj.programs[i];}, set val(x){proj.programs[i]=x;}}, 'val', OPT_PROGRAM, {placeholder:'Click here to select a program.'});
+      return h('div', {}, [sel]);
+    }
+  });
+  renderRepeatable(ccContainer, proj.costCenters, {
+    itemLabel:(v,i)=>'Cost center '+(i+1), emptyText:'No cost center added yet.', addLabel:'+ Add a cost center',
+    makeNew:()=>'',
+    renderItem:(v,i)=> {
+      const sel = selectInput({get val(){return proj.costCenters[i];}, set val(x){proj.costCenters[i]=x;}}, 'val', OPT_COST_CENTER, {placeholder:'Click here to select a cost center.'});
+      return h('div', {}, [sel]);
+    }
+  });
+
+  p.appendChild(card('Project Title & Timeline', null, [
+    fieldWrap('Project title', true, 'A title should convey meaningful information, such as focal species, season, method, purpose, spatial extent, and/or temporal extent.', textareaInput(proj,'title',{rows:2})),
+  ]));
+
+  const endDateWrap = h('div', {id:'end-date-wrap'});
+  const buildEndDate = () => {
+    endDateWrap.innerHTML = '';
+    if(proj.ongoing){
+      endDateWrap.appendChild(h('div', {class:'hint', style:'padding:9px 0;'}, ['Marked as ongoing — no end date required.']));
+    } else {
+      endDateWrap.appendChild(fieldWrap('Project end date', true, 'yyyy-mm-dd', textInput(proj,'endDate',{type:'date'})));
+    }
+  };
+  buildEndDate();
+
+  p.appendChild(card(null, null, [
+    grid(2, [
+      fieldWrap('Project start date', true, 'yyyy-mm-dd', textInput(proj,'startDate',{type:'date'})),
+      (() => { const d = h('div'); d.appendChild(endDateWrap); return d; })()
+    ]),
+    checkboxRow('Ongoing project (no defined end date)', null, proj, 'ongoing', {onChange: buildEndDate})
+  ]));
+
+  p.appendChild(card('Abstract', null, [
+    fieldWrap('Project abstract', true, 'Consider copying and pasting this from the project proposal or investigation plan.', textareaInput(proj,'abstract',{rows:5}))
+  ]));
+
+  p.appendChild(card('Keywords & Identifiers', null, [
+    fieldWrap('Keywords', false, 'Comma-separated, e.g. "walrus, haulout, Bering Sea"', textInput(proj,'keywords')),
+    fieldWrap('Project identifier code / tracking number', false, 'If this is a Refuge project, list the PRIMR ID (required). If your project does not already have a tracking code, one will be generated by your data manager.', textInput(proj,'uidList'))
+  ]));
+
+  p.appendChild(card('Spatial Extent', 'Spatial features should be provided in latitude and longitude coordinates (WGS84). Files must use the full server name instead of a mapped drive letter.', [
+    grid(2, [
+      fieldWrap('Spatial extent description', true, 'A named geographic area', textInput(proj,'spatialDesc')),
+      fieldWrap('Spatial extent URL', false, 'Link to a shapefile, geoJSON, KML, GPX, etc.', textInput(proj,'spatialURL')),
+    ])
+  ]));
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 3. Contacts ---------- */
+function buildContactsPanel(idx){
+  const c = state.contacts;
+  const p = h('div', {class:'panel', id:'panel-contacts'});
+  p.appendChild(panelHead('Section 3', 'Personnel & Contacts',
+    'Provide a name, email, and role for staff involved in managing the data of this project.'));
+
+  p.appendChild(card('Primary Contact for the DMP *', 'Person who serves as the point of contact for this data management plan, e.g. project manager or coordinator.', [
+    grid(2, [
+      fieldWrap('First name', true, null, textInput(c.primary,'firstName')),
+      fieldWrap('Last name', true, null, textInput(c.primary,'lastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Position', false, null, textInput(c.primary,'position')),
+      fieldWrap('Email', true, null, textInput(c.primary,'email',{type:'email'})),
+      fieldWrap('Phone', false, null, textInput(c.primary,'phone',{type:'tel'})),
+    ]),
+    fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.primary,'org'))
+  ]));
+
+  p.appendChild(card('Data Steward *', 'Highly knowledgeable regarding the project and datasets; responsible for reviewing data products and metadata for quality and completeness (this is the pointOfContact in mdEditor).', [
+    grid(2, [
+      fieldWrap('First name', true, null, textInput(c.steward,'firstName')),
+      fieldWrap('Last name', true, null, textInput(c.steward,'lastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Position', false, null, textInput(c.steward,'position')),
+      fieldWrap('Email', true, null, textInput(c.steward,'email',{type:'email'})),
+      fieldWrap('Phone', false, null, textInput(c.steward,'phone',{type:'tel'})),
+    ]),
+    fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.steward,'org'))
+  ]));
+
+  p.appendChild(card('Data Custodian *', 'Ensures that data and metadata are preserved and maintained in accordance with the DMP, e.g. data manager or lead biologist (this is the custodian in mdEditor).', [
+    grid(2, [
+      fieldWrap('First name', true, null, textInput(c.custodian,'firstName')),
+      fieldWrap('Last name', true, null, textInput(c.custodian,'lastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Position', false, null, textInput(c.custodian,'position')),
+      fieldWrap('Email', true, null, textInput(c.custodian,'email',{type:'email'})),
+      fieldWrap('Phone', false, null, textInput(c.custodian,'phone',{type:'tel'})),
+    ]),
+    checkboxRow('Non-DOI employee', null, c.custodian, 'nonDOI'),
+    fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.custodian,'org'))
+  ]));
+
+  p.appendChild(card('Data Trustee *', 'Responsible for ensuring resources (staff, funding) are adequate to complete data management, e.g. Field Office Supervisor or program manager (this is the owner in mdEditor).', [
+    grid(2, [
+      fieldWrap('First name', true, null, textInput(c.trustee,'firstName')),
+      fieldWrap('Last name', true, null, textInput(c.trustee,'lastName')),
+    ]),
+    grid(3, [
+      fieldWrap('Position', false, null, textInput(c.trustee,'position')),
+      fieldWrap('Email', true, null, textInput(c.trustee,'email',{type:'email'})),
+      fieldWrap('Phone', false, null, textInput(c.trustee,'phone',{type:'tel'})),
+    ])
+  ]));
+
+  const otherContainer = h('div');
+  p.appendChild(card('Other Contacts / Partners', 'Use this for any additional staff or external partners/collaborators involved with the project.', [otherContainer]));
+  renderRepeatable(otherContainer, c.other, {
+    itemLabel:(v,i)=> (v.firstName || v.lastName) ? (v.firstName+' '+v.lastName).trim() : 'Contact '+(i+1),
+    emptyText:'No additional contacts added.', addLabel:'+ Add a contact', minItems:0,
+    makeNew: emptyOtherContact,
+    renderItem:(item)=> h('div',{},[
+      grid(2, [
+        fieldWrap('First name', false, null, textInput(item,'firstName')),
+        fieldWrap('Last name', false, null, textInput(item,'lastName')),
+      ]),
+      grid(3, [
+        fieldWrap('Position', false, null, textInput(item,'position')),
+        fieldWrap('Email', false, null, textInput(item,'email',{type:'email'})),
+        fieldWrap('Phone', false, null, textInput(item,'phone',{type:'tel'})),
+      ]),
+      grid(2, [
+        fieldWrap('Role', false, null, selectInput(item,'role',OPT_CONTACT_ROLE,{placeholder:'Select a role...'})),
+        fieldWrap('Organization (if non-USFWS)', false, null, textInput(item,'org')),
+      ])
+    ])
+  });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 4. Metadata & Data Standards ---------- */
+function buildMetadataPanel(idx){
+  const ms = state.metadataStandards;
+  const p = h('div', {class:'panel', id:'panel-metadata'});
+  p.appendChild(panelHead('Section 4', 'Metadata & Data Standards',
+    "The Service's data must be described with metadata following an applicable metadata standard."));
+
+  const otherTypeWrap = h('div', {id:'meta-other-type-wrap'});
+  const buildOtherType = () => {
+    otherTypeWrap.innerHTML = '';
+    if(ms.other){
+      const w = h('div');
+      w.appendChild(fieldWrap('Other metadata standard', false, null, comboInput(ms,'otherType',OPT_META_OTHER)));
+      otherTypeWrap.appendChild(w);
+    }
+  };
+  buildOtherType();
+
+  p.appendChild(card('Metadata Standard *', null, [
+    checkboxRow('The project and its data products will be documented with metadata created in mdEditor.',
+      'Metadata will be written by project personnel to meet regional, programmatic, and national standards and will be reviewed, approved, and maintained.',
+      ms, 'mdJSON'),
+    checkboxRow('Other standard will be used', 'If checked, choose the standard below.', ms, 'other', {onChange:buildOtherType}),
+    otherTypeWrap
+  ]));
+
+  const dsContainer = h('div');
+  p.appendChild(card('Data Standards *', 'Data may be subject to Service-wide standards. Select all that apply.', [dsContainer]));
+  renderRepeatable(dsContainer, state.dataStandards, {
+    itemLabel:(v,i)=>'Standard '+(i+1), emptyText:'No data standard selected.', addLabel:'+ Add a data standard',
+    makeNew:()=>'Not Applicable',
+    renderItem:(v,i)=> {
+      const sel = selectInput({get val(){return state.dataStandards[i];}, set val(x){state.dataStandards[i]=x;}}, 'val', OPT_DATA_STANDARD, {placeholder:'Select...'});
+      sel.value = v;
+      return h('div',{},[sel]);
+    }
+  });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 5. Storage, Backup & Review ---------- */
+function buildStoragePanel(idx){
+  const st = state.storage;
+  const p = h('div', {class:'panel', id:'panel-storage'});
+  p.appendChild(panelHead('Section 5', 'Data Sharing, Security & Preservation',
+    'Identify the location of secure, short-term storage and backup of data files. Check all that apply. File paths must include the full server name instead of a mapped drive letter.'));
+
+  function storageRow(labelText, block, urlKey, urlLabel){
+    const urlWrap = h('div', {style:'margin-top:8px; display:none;'});
+    urlWrap.appendChild(fieldWrap(urlLabel, false, null, textInput(block, urlKey)));
+    const setVis = () => { urlWrap.style.display = block.checked ? 'block' : 'none'; };
+    setVis();
+    return h('div', {}, [checkboxRow(labelText, null, block, 'checked', {onChange:setVis}), urlWrap]);
+  }
+
+  p.appendChild(card('Short-term Storage & Backup', null, [
+    fieldWrap('Storage location URL', false, 'General URL or path for where project data is stored short-term, if there is one primary location. File paths must include the full server name instead of a mapped drive letter.', textInput(st,'locationURL')),
+    storageRow('OneDrive', st.oneDrive, 'url', 'OneDrive URL'),
+    storageRow('TEAMS file folder', st.teams, 'url', 'Teams URL'),
+    storageRow('External hard drive', st.external, 'loc', 'Describe external storage location'),
+    storageRow('Network drive', st.network, 'url', 'Network URL'),
+    storageRow('Other', st.other, 'loc', 'Describe other storage location / URL'),
+  ]));
+
+  const backupOtherWrap = h('div', {id:'backup-other-wrap'});
+  const buildBackupOther = () => {
+    backupOtherWrap.innerHTML = '';
+    if(st.backupFreq === 'Other'){
+      backupOtherWrap.appendChild(fieldWrap('Describe backup frequency', false, null, textInput(st,'backupFreqOther')));
+    }
+  };
+  buildBackupOther();
+
+  p.appendChild(card('Backup Frequency & Access', null, [
+    grid(2, [
+      fieldWrap('Backup frequency during project implementation', false, null, selectInput(st,'backupFreq',OPT_BACKUP_FREQ,{placeholder:'Select frequency...', onChange:buildBackupOther})),
+    ]),
+    backupOtherWrap,
+    fieldWrap('Short-term storage access restrictions', false, 'Detail any data access restrictions that apply during project implementation.', textareaInput(st,'filePermissions',{rows:3}))
+  ]));
+
+  p.appendChild(card('Data Review Schedule *', null, [
+    fieldWrap('Most relevant data review schedule', true, null, selectInput(st,'reviewSchedule',OPT_REVIEW_SCHEDULE,{placeholder:'Select...'}))
+  ]));
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 6. Distribution & Records ---------- */
+function buildDistributionPanel(idx){
+  const d = state.distribution;
+  const p = h('div', {class:'panel', id:'panel-distribution'});
+  p.appendChild(panelHead('Section 6', 'Distribution & Records',
+    'Regional Data Repository, public data sharing repositories, and records disposition schedules.'));
+
+  const rdrUrlWrap = h('div', {id:'rdr-url-wrap'});
+  const buildRdrUrl = () => {
+    rdrUrlWrap.innerHTML = '';
+    rdrUrlWrap.appendChild(fieldWrap('RDR folder URL', false, 'To be completed by your Data Manager if no folder exists yet.', textInput(d,'rdrURL')));
+    if(!d.rdrURL){
+      rdrUrlWrap.appendChild(fieldWrap('Project short title', false, 'If a folder in the RDR does not currently exist, provide a 3- or 4-word shortened project title; your program data manager will work with you to create an RDR code.', textInput(d,'shortTitle')));
+    }
+  };
+  buildRdrUrl();
+
+  p.appendChild(card('Regional Data Repository', 'Long-term authoritative preservation of this project and its products will follow the Alaska Region Interim Data Management Guide, maintaining data assets including metadata in an archive folder in the RDR.', [
+    checkboxRow('Preserve this project in the Regional Data Repository (RDR)', null, d, 'rdrChecked'),
+    rdrUrlWrap
+  ]));
+
+  const repoContainer = h('div');
+  p.appendChild(card('Public Data Sharing Repositories', 'Unless otherwise specified, all data and products are assumed to be public domain (open access). Identify publicly accessible repositories where a copy of the data and metadata will be shared. Refuge staff are required to preserve data assets in ServCat.', [repoContainer]));
+  renderRepeatable(repoContainer, d.repositories, {
+    itemLabel:(v,i)=> v.name || ('Repository '+(i+1)), emptyText:'No repository added.', addLabel:'+ Add a repository',
+    makeNew: emptyRepo,
+    renderItem:(item)=> grid(2, [
+      fieldWrap('Repository', false, null, selectInput(item,'name',OPT_REPO_NAME,{placeholder:'Select a repository...'})),
+      fieldWrap('URL', false, null, textInput(item,'url')),
+    ])
+  });
+
+  const recContainer = h('div');
+  p.appendChild(card('Records Schedule and Disposition', 'Your data manager or Regional Records Manager can assist in determining the applicable records schedule(s) and disposition(s). You may also type a schedule name if it is not found in the list.', [recContainer]));
+  renderRepeatable(recContainer, d.recordsSchedules, {
+    itemLabel:(v,i)=>'Records entry '+(i+1), emptyText:'No records schedule added.', addLabel:'+ Add a records schedule',
+    makeNew: emptyRecordsSchedule,
+    renderItem:(item)=> h('div',{},[
+      fieldWrap('Records schedule', true, null, comboInput(item,'schedule',OPT_RECORDS_SCHEDULE)),
+      grid(2, [
+        fieldWrap('Records type', true, null, textInput(item,'type')),
+        fieldWrap('Records disposition', true, null, textInput(item,'disposition')),
+      ])
+    ])
+  });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 7. Data Products ---------- */
+function buildProductsPanel(idx){
+  const p = h('div', {class:'panel', id:'panel-products'});
+  p.appendChild(panelHead('Section 7', 'Data Products',
+    'Detail each distinct digital data product anticipated to be produced during the project — spreadsheets, databases, statistical models, maps, photo/video collections, reports, etc. Sections where information does not yet exist can be set to "TBD".'));
+
+  const prodContainer = h('div');
+  p.appendChild(prodContainer);
+  renderRepeatable(prodContainer, state.products, {
+    itemLabel:(v,i)=> v.title || ('Product '+(i+1)), emptyText:'No data products added yet.', addLabel:'+ Add a data product',
+    makeNew: emptyProduct,
+    renderItem: renderProductItem
+  });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+function renderProductItem(prod){
+  const wrap = h('div');
+
+  wrap.appendChild(fieldWrap('Product title', true, null, textInput(prod,'title')));
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['File name & location']));
+  wrap.appendChild(grid(2,[
+    fieldWrap('File name', true, null, textInput(prod,'name')),
+    fieldWrap('File URL / path', false, null, textInput(prod,'url')),
+  ]));
+  wrap.appendChild(fieldWrap('File versioning notes', false, 'Description of file versioning conventions, if needed.', textInput(prod,'fileVersioning')));
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['Product metadata']));
+  wrap.appendChild(fieldWrap('Existing metadata URL', false, null, textInput(prod,'metaURL')));
+  wrap.appendChild(checkboxRow('Do not initiate a new metadata record for this product', 'Check if metadata already exists elsewhere.', prod, 'skipMeta'));
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['Resource type & format *']));
+  wrap.appendChild(grid(2,[
+    fieldWrap('Resource type', true, null, selectInput(prod,'resourceType',OPT_RESOURCE_TYPE,{placeholder:'Select...'})),
+    fieldWrap('Format', true, null, selectInput(prod,'format',OPT_FORMAT,{placeholder:'Select...', onChange:()=>{}})),
+  ]));
+  wrap.appendChild(fieldWrap('Other format (if "other" selected)', false, null, textInput(prod,'formatOther')));
+
+  wrap.appendChild(fieldWrap('Description', false, null, textareaInput(prod,'abstract',{rows:3})));
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['Data producer(s) / originator(s) *']));
+  wrap.appendChild(h('div',{class:'subsection-desc'},['Person(s) responsible for collecting, authoring, or generating the data product.']));
+  const origContainer = h('div');
+  wrap.appendChild(origContainer);
+  renderRepeatable(origContainer, prod.originators, {
+    itemLabel:(v,i)=> (v.firstName||v.lastName) ? (v.firstName+' '+v.lastName).trim() : 'Originator '+(i+1),
+    emptyText:'No originator added.', addLabel:'+ Add an originator', minItems:1,
+    makeNew: emptyOriginator,
+    renderItem:(item)=> h('div',{},[
+      grid(2,[
+        fieldWrap('First name', true, null, textInput(item,'firstName')),
+        fieldWrap('Last name', true, null, textInput(item,'lastName')),
+      ]),
+      grid(2,[
+        fieldWrap('Email', false, null, textInput(item,'email',{type:'email'})),
+        fieldWrap('Organization (if non-USFWS)', false, null, textInput(item,'org')),
+      ]),
+      checkboxRow('Non-DOI employee', null, item, 'nonDOI')
+    ])
+  });
+
+  wrap.appendChild(fieldWrap('Quality Assurance', true, "Procedures used to prevent errors from entering the data (data collection protocols, training, forms). If described in a protocol/SOP, provide a URL instead. Type 'NA' if not relevant.", textareaInput(prod,'qualityAssurance',{rows:2})));
+  wrap.appendChild(fieldWrap('Quality Control', true, "Post-collection procedures to detect and correct errors. If described in a protocol/SOP, provide a URL instead. Type 'NA' if not relevant.", textareaInput(prod,'qualityControl',{rows:2})));
+  wrap.appendChild(fieldWrap('Resource Requirements', true, 'Hardware, software, staff, or financial resources needed to maintain, store, and access this product.', textareaInput(prod,'resources',{rows:2})));
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['Metadata author(s) *']));
+  wrap.appendChild(h('div',{class:'subsection-desc'},['Person(s) responsible for preparing and maintaining metadata.']));
+  const maContainer = h('div');
+  wrap.appendChild(maContainer);
+  renderRepeatable(maContainer, prod.metaAuthors, {
+    itemLabel:(v,i)=> (v.firstName||v.lastName) ? (v.firstName+' '+v.lastName).trim() : 'Metadata author '+(i+1),
+    emptyText:'No metadata author added.', addLabel:'+ Add a metadata author', minItems:1,
+    makeNew: emptyMetaAuthor,
+    renderItem:(item)=> grid(2,[
+      fieldWrap('First name', true, null, textInput(item,'firstName')),
+      fieldWrap('Last name', true, null, textInput(item,'lastName')),
+      fieldWrap('Email', false, null, textInput(item,'email',{type:'email'})),
+      fieldWrap('Organization (if non-USFWS)', false, null, textInput(item,'org')),
+    ])
+  });
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['Access restrictions *']));
+  wrap.appendChild(fieldWrap('Restriction level', true, 'If not restricted, select "open access".', selectInput(prod,'restriction',OPT_RESTRICTION,{placeholder:'Select...'})));
+  wrap.appendChild(fieldWrap('Restriction justification', false, 'Required if restricted: identify FOIA/CUI conditions, who does/does not have access, and when restrictions are removed. Even restricted products must have metadata.', textareaInput(prod,'restrictionJustification',{rows:2})));
+
+  wrap.appendChild(fieldWrap('Supplementary materials', false, 'Additional materials needed to understand this product (e.g. Entity-Relationship Diagrams, file metadata, source citations) and their locations.', textareaInput(prod,'additional',{rows:2})));
+
+  wrap.appendChild(h('div',{class:'subsection-label'},['Spatial extent']));
+  wrap.appendChild(checkboxRow('Spatial extent of the product matches the project', null, prod, 'spatialMatchesProject'));
+  wrap.appendChild(grid(2,[
+    fieldWrap('Spatial extent description (if different)', false, null, textInput(prod,'spatialDesc')),
+    fieldWrap('Spatial extent URL (if different)', false, null, textInput(prod,'spatialURL')),
+  ]));
+
+  return wrap;
+}
+
+/* ---------- 8. Source Data ---------- */
+function buildSourceDataPanel(idx){
+  const p = h('div', {class:'panel', id:'panel-source'});
+  p.appendChild(panelHead('Section 8', 'Source Data',
+    'Identify existing source data that will be used during the project but that are not produced by the project — e.g. GIS layers used in spatial analyses, weather station data, etc.'));
+
+  const srcContainer = h('div');
+  p.appendChild(card(null, null, [srcContainer]));
+  renderRepeatable(srcContainer, state.sourceData, {
+    itemLabel:(v,i)=>'Source data '+(i+1), emptyText:'No source data added.', addLabel:'+ Add source data',
+    makeNew: emptySourceData,
+    renderItem:(item)=> h('div',{},[
+      fieldWrap('Description', false, 'Include how these data will be used during the project.', textareaInput(item,'description',{rows:2})),
+      fieldWrap('Location', false, 'URL to access the data, or a description of how it can be accessed.', textInput(item,'location')),
+    ])
+  });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 9. Physical Samples ---------- */
+function buildSamplesPanel(idx){
+  const p = h('div', {class:'panel', id:'panel-samples'});
+  p.appendChild(panelHead('Section 9', 'Physical Samples',
+    'Optional. Describe the management of physical samples collected or analyzed during this project. Sections where information does not yet exist can be set to "TBD".'));
+
+  const sampContainer = h('div');
+  p.appendChild(card(null, null, [sampContainer]));
+  renderRepeatable(sampContainer, state.samples, {
+    itemLabel:(v,i)=> v.name || ('Sample '+(i+1)), emptyText:'No physical samples added.', addLabel:'+ Add a sample',
+    makeNew: emptySample,
+    renderItem:(item)=> h('div',{},[
+      fieldWrap('Sample name', false, null, textInput(item,'name')),
+      fieldWrap('Description', false, 'Describe the sample collection and its purpose, including any data products expected to result from analysis.', textareaInput(item,'description',{rows:2})),
+      fieldWrap('Labeling standards', false, 'How samples will be labeled for identification.', textInput(item,'label')),
+      fieldWrap('QA/QC procedures', false, 'Procedures used to collect, compile, and ensure quality of samples. Citations/links may be used in lieu of a description.', textareaInput(item,'qaqc',{rows:2})),
+      fieldWrap('Storage location & conditions', false, 'Where samples will be stored and under what conditions.', textInput(item,'loc')),
+      fieldWrap('Chain of custody', false, 'Chain of custody, control, transfer, analysis, and disposition of samples during the project.', textareaInput(item,'chain',{rows:2})),
+      fieldWrap('Fate after analysis', false, 'Plans for long-term storage or disposal of samples after analysis or project conclusion.', textareaInput(item,'fate',{rows:2})),
+      fieldWrap('Data products derived', false, 'Name any data products produced as a result of analysis of these samples.', textInput(item,'products')),
+    ])
+  });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 10. Review & Export ---------- */
+function requiredChecks(){
+  const missing = [];
+  const s = state;
+  function need(cond, label, section){ if(!cond) missing.push({label, section}); }
+
+  need(!!s.dmp.createDate, 'DMP creation date', 'dmp');
+  need(!!(s.dmp.creatorFirstName && s.dmp.creatorLastName), 'DMP creator name', 'dmp');
+  need(!!s.dmp.creatorEmail, 'DMP creator email', 'dmp');
+
+  need(!!s.project.region, 'FWS Region', 'project');
+  need(s.project.programs.length > 0, 'At least one FWS Program', 'project');
+  need(s.project.costCenters.length > 0, 'At least one Cost Center', 'project');
+  need(!!s.project.title, 'Project title', 'project');
+  need(!!s.project.startDate, 'Project start date', 'project');
+  need(s.project.ongoing || !!s.project.endDate, 'Project end date (or mark ongoing)', 'project');
+  need(!!s.project.abstract, 'Project abstract', 'project');
+  need(!!(s.project.spatialDesc || s.project.spatialURL), 'Spatial extent (description or URL)', 'project');
+
+  const c = s.contacts;
+  need(!!(c.primary.firstName && c.primary.lastName && c.primary.email), 'Primary DMP contact (name & email)', 'contacts');
+  need(!!(c.steward.firstName && c.steward.lastName && c.steward.email), 'Data Steward (name & email)', 'contacts');
+  need(!!(c.custodian.firstName && c.custodian.lastName && c.custodian.email), 'Data Custodian (name & email)', 'contacts');
+  need(!!(c.trustee.firstName && c.trustee.lastName && c.trustee.email), 'Data Trustee (name & email)', 'contacts');
+
+  need(s.metadataStandards.mdJSON || s.metadataStandards.other, 'A metadata standard', 'metadata');
+  need(s.dataStandards.length > 0, 'At least one data standard', 'metadata');
+
+  need(!!s.storage.reviewSchedule, 'Data review schedule', 'storage');
+
+  if(s.products.length === 0){
+    missing.push({label:'At least one data product is recommended (not strictly required)', section:'products'});
+  }
+  s.products.forEach((prod, i) => {
+    const tag = 'Product '+(i+1)+' ("'+(prod.title||'untitled')+'")';
+    need(!!prod.title, tag+': title', 'products');
+    need(!!prod.resourceType, tag+': resource type', 'products');
+    need(!!prod.format, tag+': format', 'products');
+    need(!!prod.qualityAssurance, tag+': quality assurance', 'products');
+    need(!!prod.qualityControl, tag+': quality control', 'products');
+    need(!!prod.resources, tag+': resource requirements', 'products');
+    need(!!prod.restriction, tag+': access restriction', 'products');
+    need(prod.originators.some(o=>o.firstName && o.lastName), tag+': at least one originator', 'products');
+    need(prod.metaAuthors.some(o=>o.firstName && o.lastName), tag+': at least one metadata author', 'products');
+  });
+
+  return missing;
+}
+
+function buildReviewPanel(idx){
+  const p = h('div', {class:'panel', id:'panel-review'});
+  p.appendChild(panelHead('Section 10', 'Review & Export',
+    'Check for missing required fields, then export a DMP data file. That file feeds directly into the DMP_to_metadata notebook in place of the old Word document.'));
+
+  const missing = requiredChecks();
+  const checkCard = h('div', {class:'card'});
+  checkCard.appendChild(h('h3',{},['Completeness check']));
+  if(missing.length === 0){
+    checkCard.appendChild(h('p', {class:'all-good'}, ['✓ All required fields look complete.']));
+  } else {
+    const ul = h('ul', {class:'missing-list'});
+    missing.forEach(m => {
+      const li = h('li', {}, [
+        h('a', {href:'#', onclick:(e)=>{ e.preventDefault(); showSection(m.section); }}, [m.label])
+      ]);
+      ul.appendChild(li);
+    });
+    checkCard.appendChild(ul);
+  }
+  p.appendChild(checkCard);
+
+  const summaryCard = h('div', {class:'card'});
+  summaryCard.appendChild(h('h3',{},['Summary']));
+  summaryCard.appendChild(buildSummaryTable());
+  p.appendChild(summaryCard);
+
+  const exportCard = h('div', {class:'card'});
+  exportCard.appendChild(h('h3',{},['Export']));
+  exportCard.appendChild(h('p', {class:'card-desc'}, [
+    'Exporting writes a ', h('code',{},['dmp_data.json']), ' style file containing everything entered in this form. Hand that file (plus the accompanying ',
+    h('code',{},['dmp_json_to_dataframe.py']), ' bridge script) to the DMP_to_metadata notebook to continue exactly where the Word-template workflow left off.'
+  ]));
+  const btnRow = h('div', {style:'display:flex; gap:10px; margin-top:6px;'});
+  btnRow.appendChild(h('button', {class:'btn btn-primary', onclick:doExport}, ['Export DMP data (.json)']));
+  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:()=>window.print()}, ['Print / save as PDF']));
+  exportCard.appendChild(btnRow);
+  p.appendChild(exportCard);
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+function summaryRow(tbl, label, value){
+  const tr = h('tr', {}, [h('td',{},[label]), h('td',{},[value || '—'])]);
+  tbl.appendChild(tr);
+}
+function buildSummaryTable(){
+  const frag = document.createDocumentFragment();
+  const s = state;
+
+  function group(title, rows){
+    const g = h('div', {class:'review-group'});
+    g.appendChild(h('h4',{},[title]));
+    const tbl = h('table', {class:'review-table'});
+    rows.forEach(r => summaryRow(tbl, r[0], r[1]));
+    g.appendChild(tbl);
+    frag.appendChild(g);
+  }
+
+  group('Project', [
+    ['Region', s.project.region],
+    ['Title', s.project.title],
+    ['Program(s)', s.project.programs.join(', ')],
+    ['Cost center(s)', s.project.costCenters.join('; ')],
+    ['Timeline', s.project.startDate + ' → ' + (s.project.ongoing ? 'ongoing' : (s.project.endDate||'—'))],
+  ]);
+
+  group('Contacts', [
+    ['Primary', [s.contacts.primary.firstName, s.contacts.primary.lastName].filter(Boolean).join(' ')],
+    ['Steward', [s.contacts.steward.firstName, s.contacts.steward.lastName].filter(Boolean).join(' ')],
+    ['Custodian', [s.contacts.custodian.firstName, s.contacts.custodian.lastName].filter(Boolean).join(' ')],
+    ['Trustee', [s.contacts.trustee.firstName, s.contacts.trustee.lastName].filter(Boolean).join(' ')],
+    ['Other contacts', String(s.contacts.other.length)],
+  ]);
+
+  group('Products & Samples', [
+    ['Data products', String(s.products.length)],
+    ['Source data entries', String(s.sourceData.length)],
+    ['Physical samples', String(s.samples.length)],
+  ]);
+
+  return frag;
+}
+
+/* =========================================================================
+   NAV / RENDER ORCHESTRATION
+   ========================================================================= */
+let currentSection = SECTIONS[0].id;
+
+function renderNav(){
+  const ul = document.getElementById('nav');
+  ul.innerHTML = '';
+  SECTIONS.forEach((sec, i) => {
+    const li = h('li', {});
+    if(sec.id === currentSection) li.className = 'active';
+    const btn = h('button', {onclick:()=>showSection(sec.id)}, [
+      h('span',{class:'num'}, [String(i+1).padStart(2,'0')]),
+      h('span',{}, [sec.label]),
+      h('span',{class:'status'}, [''])
+    ]);
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+}
+
+function renderAllPanels(){
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  SECTIONS.forEach((sec, i) => {
+    const panel = sec.build(i);
+    if(sec.id === currentSection) panel.classList.add('active');
+    content.appendChild(panel);
+  });
+}
+
+function showSection(id){
+  currentSection = id;
+  renderNav();
+  if(id === 'review'){
+    // The review panel summarizes live state -- rebuild it fresh every time
+    // it's opened so the completeness check and summary reflect current data.
+    const old = document.getElementById('panel-review');
+    if(old){
+      const idx = SECTIONS.findIndex(s => s.id === 'review');
+      old.replaceWith(buildReviewPanel(idx));
+    }
+  }
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('panel-' + id);
+  if(target) target.classList.add('active');
+  document.getElementById('content').scrollIntoView({behavior:'instant', block:'start'});
+  window.scrollTo(0,0);
+}
+
+function refreshTopbar(){
+  const nameEl = document.getElementById('proj-name-display');
+  if(state.project.title){
+    nameEl.textContent = state.project.title;
+    nameEl.classList.remove('placeholder');
+  } else {
+    nameEl.textContent = 'Untitled project';
+    nameEl.classList.add('placeholder');
+  }
+}
+
+/* =========================================================================
+   PERSISTENCE (localStorage draft autosave) + EXPORT/IMPORT
+   ========================================================================= */
+let saveTimer = null;
+function onDirty(){
+  refreshTopbar();
+  document.getElementById('save-status-text').textContent = 'Saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      document.getElementById('save-status-text').textContent = 'Draft saved locally';
+    }catch(e){
+      document.getElementById('save-status-text').textContent = 'Autosave unavailable';
+    }
+  }, 400);
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+function doExport(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = (state.project.title || 'dmp_data').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  a.href = url;
+  a.download = (safeName || 'dmp_data') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Exported ' + a.download);
+}
+
+function loadStateFromObject(obj){
+  const fresh = defaultState();
+  function merge(target, src){
+    if(Array.isArray(target)) return; // arrays handled by caller
+    for(const k in target){
+      if(src && Object.prototype.hasOwnProperty.call(src, k)){
+        if(Array.isArray(target[k])){
+          target[k] = src[k] || [];
+        } else if(typeof target[k] === 'object' && target[k] !== null){
+          merge(target[k], src[k]);
+        } else {
+          target[k] = src[k];
+        }
+      }
+    }
+  }
+  merge(fresh, obj);
+  state = fresh;
+}
+
+function tryRestoreDraft(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      loadStateFromObject(JSON.parse(raw));
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+function boot(){
+  const restored = tryRestoreDraft();
+  renderNav();
+  renderAllPanels();
+  refreshTopbar();
+  if(restored) toast('Restored your last saved draft.');
+
+  document.getElementById('btn-export').addEventListener('click', doExport);
+
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    if(confirm('Clear the entire form and start over? This cannot be undone (your saved draft will also be cleared).')){
+      state = defaultState();
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+      currentSection = SECTIONS[0].id;
+      renderNav();
+      renderAllPanels();
+      refreshTopbar();
+      toast('Form cleared.');
+    }
+  });
+
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('btn-import').addEventListener('click', () => overlay.classList.add('show'));
+  document.getElementById('modal-cancel').addEventListener('click', () => overlay.classList.remove('show'));
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.classList.remove('show'); });
+
+  document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const obj = JSON.parse(reader.result);
+        loadStateFromObject(obj);
+        currentSection = SECTIONS[0].id;
+        renderNav();
+        renderAllPanels();
+        refreshTopbar();
+        overlay.classList.remove('show');
+        toast('Loaded ' + file.name);
+        onDirty();
+      }catch(err){
+        alert('Could not read that file as valid DMP JSON.\n\n' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
