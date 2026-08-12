@@ -12,13 +12,18 @@ All notable changes to this project will be documented in this file. The format 
 >-   *Mention whether you follow Semantic Versioning.*
 -->
 
-# your-repository-name 0.1.0
+# Data_Management_Plan_App 0.1.0
 
-General notes about this version can go here.
+Browser application that assists FWS staff to create a Data Management Plan that 
+- meets FWS policy
+- drafts mdEditor metadata files for the project and products
+- creates an internal preservation repository for the project
+- includes the 2026 records schedule update
+- feeds into the National DMP SharePoint list
 
 ## Added
 
--   A list of new features
+-   Please email tamatha_patterson@fws.gov and calyen_cummings@fws.gov with suggestions for added features
 
 ## Changed
 
