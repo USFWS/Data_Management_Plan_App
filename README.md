@@ -6,57 +6,136 @@
 
 <!-- badges: end -->
 
-# R7 (Alaska) GitHub Repository Template
+# AK Region DMP Interface
 
-## Overview
+This interface builds on the `AK_DMP_Template_v1_3.docx` as an option for FWS staff to fill out a Data
+Management Plan. Instead of typing into Word content-control boxes, staff can fill
+out a form in your browser. 
+This interface is built for use for all FWS staff and Alaska defaults are removed. 
+Everything else about the pipeline — the contact-matching, the mdEditor JSON generation, and the National DMP
+SharePoint export — is unchanged.
 
-The **r7-repo-template** is a [GitHub repository template](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template) for USFWS Region 7 (Alaska) projects. The template is used to create a repository containing metadata files that meet [DOI GitHub Enterprise Cloud (DGEC) development guidance](https://doimspp.sharepoint.com/sites/ocio-DOI-GitHub-Enterprise/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior%2FDGEC%20Development%20Guidance%2Epdf&parent=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior) requirements. These metadata files should be customized to the specific repository by following the instructions under [Customize metadata files](#update-metadata-files) below.
 
-## Installation
+## What's in this folder
 
-No installation is necessary. Follow the instructions under [Usage](#usage) below to create a repository using this template.
+| File | Purpose |
+|---|---|
+| `DMP_Interface.html` | The form itself. Open it (or double-click the launcher) to fill out a DMP. |
+| `Launch_DMP_Interface.bat` | Double-click to open the interface in your default browser. |
+| `dmp_json_to_dataframe.py` | Bridge script. Turns the interface's JSON export into the same dataframe the notebook used to get by scraping a Word doc. |
+| `DMP_to_metadata_from_interface.ipynb` | A copy of `DMP_to_metadata.ipynb` with the Word-scraping cells swapped for the JSON bridge. Everything from "Pulling contacts" onward is untouched. |
+| `region_program_contacts.py` | Resolves the interface's "FWS Region" and "FWS Program" selections into mdEditor contact UUIDs, using the org's contacts export. |
+| `FWSRegion_Program_Contacts_mdeditor-*.json` | mdEditor export of the FWS Region and FWS Program organization contact records. Update this file (re-export from mdEditor) if those org records change. |
 
-## Usage
+Nothing here requires a server or an internet connection to run. The `.html`
+file is self-contained — CSS and JavaScript are inline, there are no CDN
+calls or external fonts — so opening it via `file://` works the same on a
+locked-down federal machine as anywhere else.
 
-According to the DGEC Rules of Behavior, **you must hold a [Maintain Role](https://doimspp.sharepoint.com/sites/ocio-DOI-GitHub-Enterprise/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior%2FDGEC%20Rules%20of%20Behavior%20%2D%20Maintain%2Epdf&parent=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior) to create repositories within the DGEC.** There are two ways to create a new repository using this template. If you have a DGEC Maintain Role, you can follow either of the options below.
+## Filling out a DMP
 
-### Create a new repository
+1. Double-click `Launch_DMP_Interface.bat` (or open `DMP_Interface.html`
+   directly in Chrome/Edge/Firefox).
+2. Work through the ten sections in the left sidebar — they follow the same
+   order and required fields (marked with `*`) as the AK_DMP Word template.
+   Repeatable items (extra contacts, products, originators, records
+   schedules, etc.) have an **"+ Add"** button, matching the old template's
+   `[+]` content-control behavior.
+3. Your work autosaves to the browser's local storage as you type, so you
+   can close the tab and come back later on the same machine. Use
+   **"Load JSON…"** to resume a draft you exported earlier, or to hand a
+   partially-completed plan to a colleague use the 'Export DMP data' button.
+4. On the **Review & Export** screen, check the completeness list, then click
+   **"Export DMP data (.json)"**.
 
-#### Option 1. Create a new repository from the FWS GitHub organization home page
+## Feeding the exported file into the metadata pipeline
 
-1.  From the home page of the FWS GitHub organization, select the [Repositories tab](https://github.com/orgs/USFWS/repositories).
-2.  Select the **New repository** green button.
-3.  Under Repository template, select **USFWS/r7-repo-template**. Leave **Include all branches** unchecked.
-4.  Give your new repository a name. A repository name should be descriptive, readable, consistent, contextual, and brief. For repositories that are not R packages, the best practice is to name repositories using lower case alphanumeric characters separated by a dash (-) rather than spaces or underscores. R package names must only consist or letters, numbers, and periods. They must start with a letter and can not end with a period. For other things to consider, refer to Hadley Wickham's [R Packages](https://r-pkgs.org/workflow101.html#name-your-package) book. 
-5.  Select the [repository visibility](https://docs.github.com/en/enterprise-cloud@latest/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) (i.e., Public, Internal, or Private). See **2.1 Repository Classification** in the [DOI DGEC Development Guidance document](https://doimspp.sharepoint.com/sites/ocio-DOI-GitHub-Enterprise/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior%2FDGEC%20Development%20Guidance%2Epdf&parent=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior) for information on an appropriate level of visibility for your repository.
-6.  Select **Create repository from template**.
+You have two options:
 
-#### Option 2. Create a new repository from the r7-repo-template repository
+**Option A — use the pre-modified notebook (recommended).**
+Open `DMP_to_metadata_from_interface.ipynb` instead of the original
+notebook. In the first cell, set:
 
-1.  Navigate to the [r7-repo-template repository](https://github.com/USFWS/r7_DGEC_template).
-2.  Select the **Use this template** green button.
-3.  Choose "Create a new repository" from the drop down menu.
-4.  Give your new repository a name. A repository name should be descriptive, readable, consistent, contextual, and brief. For repositories that are not R packages, the best practice is to name repositories using lower case alphanumeric characters separated by a dash (-) rather than spaces or underscores. R package names must only consist or letters, numbers, and periods. They must start with a letter and can not end with a period. For other things to consider, refer to Hadley Wickham's [R Packages](https://r-pkgs.org/workflow101.html#name-your-package) book. 
-5.  Select the [repository visibility](https://docs.github.com/en/enterprise-cloud@latest/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) (i.e., Public, Internal, or Private). See **2.1 Repository Classification** in the [DOI DGEC Development Guidance document](https://doimspp.sharepoint.com/sites/ocio-DOI-GitHub-Enterprise/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior%2FDGEC%20Development%20Guidance%2Epdf&parent=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior) for information on an appropriate level of visibility for your repository.
-6.  Select **Create repository from template**.
+```python
+dmp_json_path = r'C:\path\to\your_exported_file.json'
+bridge_dir    = r'C:\path\to\this_folder'   # wherever dmp_json_to_dataframe.py lives
+region_program_contacts_path = r'C:\path\to\this_folder\FWSRegion_Program_Contacts_mdeditor-....json'
+```
 
-### Update metadata files
+along with the same `contact_folder`, `tmp_dir`, `dmp_spreadsheet`, and
+profile/schema settings you were already using. Run the notebook top to
+bottom as before — the contacts matching, mdEditor JSON generation, and
+SharePoint export cells are byte-for-byte identical to the original.
 
-The **r7-repo-template** contains metadata files that are required under the [DOI DGEC Development Guidance document](https://doimspp.sharepoint.com/sites/ocio-DOI-GitHub-Enterprise/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior%2FDGEC%20Development%20Guidance%2Epdf&parent=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior). The files described in the table below should be updated when creating a repository from this template.
+**Option B — patch your existing notebook.**
+If you'd rather keep using `DMP_to_metadata.ipynb` directly, replace the
+cells that open `blankdmp`/`dmp` and scrape `word/document.xml` with:
 
-| File name     | Required?   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-|-------------------|-------------------|----------------------------------|
-| README.md     | Required    | Includes a project title and description, installation instructions, and usage instructions. It should also include contributing guidelines (e.g., a statement stating if and how contributions will be accepted), unless the repository has a CONTRIBUTING.md file.                                                                                                                                                                                                                                                                                                                                                                         |
-| LICENSE       | Required    | Identifies the content license types. Refer to the [DOI OSS Policy](https://doimspp.sharepoint.com/sites/doi-imt-services/Memorandums%20and%20Directives/Forms/Date%20Sorted.aspx?id=%2Fsites%2Fdoi%2Dimt%2Dservices%2FMemorandums%20and%20Directives%2FFY2022%2FOCIO%20Memo%5FOpen%20Source%20Software%20Policy%5FSigned%2011082021%2Epdf&parent=%2Fsites%2Fdoi%2Dimt%2Dservices%2FMemorandums%20and%20Directives%2FFY2022) for a list of recommended license types. The default license is [Creative Commons Zero v1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).                             |
-| DISCLAIMER.md | Required    | A generic disclaimer file. The template disclaimer is adapted from one approved by the [USGS Office of Science Quality and Integrity](https://www.usgs.gov/about/organization/science-support/office-science-quality-and-integrity/fundamental-science-5#5).                                                                                                                                                                                                                                                                                                                                                                         |
-| NEWS.md       | Required    | A description of the changes made between each version of software, up until the latest version. It is used to log things such as new features that have been added or bugs that have been fixed.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| code.json     | Required    | Supports code.gov integration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| gitignore     | Recommended | Specifies intentionally untracked files that Git should ignore. Files already tracked by Git are not affected. See [here](https://git-scm.com/docs/gitignore) for more info.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| CODEOWNERS    | Optional    | Defines individuals or teams that are responsible for code in a repository. Is required for using [GitHub Actions](https://doimspp.sharepoint.com/sites/ocio-DOI-GitHub-Enterprise/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior%2FDGEC%20GitHub%20Actions%2Epdf&parent=%2Fsites%2Focio%2DDOI%2DGitHub%2DEnterprise%2FShared%20Documents%2FGeneral%2FRules%20of%20Behavior). See [here](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) for more info. |
+```python
+import sys
+sys.path.append(r'C:\path\to\this_folder')
+import dmp_json_to_dataframe as bridge
+
+df, dmp, dmpvers = bridge.build_dataframe(r'C:\path\to\your_exported_file.json')
+```
+
+Everything from the "Pulling contacts" section onward reads `df`, `dmp`, and
+`dmpvers` exactly the same way it always did, so no other cells need to
+change.
+
+## FWS Region and FWS Program as administrator contacts
+
+Every metadata record generated by the notebook now lists the project's
+**FWS Region** as an `administrator`, `distributor`, and `publisher`
+contact, and each selected **FWS Program** as an `administrator` contact —
+this replaces the old version's single hardcoded "AK Region USFWS" contact,
+generalized to whichever region/program(s) were selected in the interface.
+
+This is resolved by `region_program_contacts.py` against
+`FWSRegion_Program_Contacts_mdeditor-*.json`, an mdEditor export of those
+organization contact records. If your organization adds a new program, or
+renames one, you'll need to:
+
+1. Re-export the updated contacts from mdEditor (Manage Contacts → Export)
+   and replace the JSON file in this folder.
+2. If a *new* region/program was added, add a line for it to
+   `REGION_CONTACT_NAME` or `PROGRAM_CONTACT_NAME` near the top of
+   `region_program_contacts.py`, mapping the interface's dropdown text to
+   that contact's exact `name` field in the export.
+
+If a selected region or program doesn't have a matching contact record, the
+notebook prints a warning and simply skips adding that one — it won't stop
+the rest of the notebook from running.
+
+## Why this works
+
+The old notebook's first several cells did one job: turn a filled-out Word
+document into a pandas dataframe with columns `field`, `value`, `prod_num`,
+`sample_num` — one row per content-control box, with product/sample/contact
+entries numbered to keep repeated sections apart (e.g. a project with two
+data products ends up with `productTitle1`, `productTitle2`, and two
+originators on the second product become `productOriginatorFirstName2-1`,
+`productOriginatorFirstName2-2`).
+
+`dmp_json_to_dataframe.py` reproduces that exact same field-naming and
+numbering scheme from the interface's JSON, field-for-field, so the
+dataframe it produces is indistinguishable from what scraping a real `.docx`
+used to produce. That's what lets every downstream cell — contact
+de-duplication against your existing contacts file, mdEditor record
+construction, the SharePoint spreadsheet export — run without modification.
+
+## If a field is missing or wrong
+
+If FWS adds a field to a future version of the DMP template, or you notice a
+mismatch between what the interface exports and what the notebook expects,
+the fix lives in one place: `dmp_json_to_dataframe.py`. Each section of that
+file mirrors one section of the interface's JSON output, in the same order
+the fields appeared in the original Word template — cross-reference against
+`AK_DMP_Template_v1_3.docx`'s content-control tags if you need to add one.
 
 ## Getting help
 
-Contact the [project maintainer](mailto:firstname_lastname@fws.gov) for help with this repository. If you have general questions on creating repositories in the USFWS DGEC, reach out to a USFWS DGEC [owner](https://github.com/orgs/USFWS/people?query=role%3Aowner).
+Contact the [project maintainer](mailto:tamatha_patterson@fws.gov) for help with this repository. If you have general questions on creating repositories in the USFWS DGEC, reach out to a USFWS DGEC [owner](https://github.com/orgs/USFWS/people?query=role%3Aowner).
 
 ## Contribute
 
