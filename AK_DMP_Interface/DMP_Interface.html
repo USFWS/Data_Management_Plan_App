@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -195,6 +195,20 @@ select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; ba
 }
 .note code{font-family:var(--mono); font-size:11px; background:rgba(0,0,0,0.06); padding:1px 4px; border-radius:3px;}
 
+.repo-options-row{
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  background:var(--glacier); border:1px solid var(--line-soft); border-radius:6px; padding:10px 13px; margin-bottom:14px;
+}
+.repo-options-label{font-size:12px; color:var(--ink-soft);}
+.repo-options-label strong{color:var(--spruce); font-weight:700;}
+.repo-options-actions{display:flex; align-items:center; gap:6px;}
+.btn-linklike{
+  background:none; border:none; color:var(--spruce-2); font-size:12px; font-weight:700; cursor:pointer;
+  padding:4px 8px; border-radius:4px; text-decoration:underline; text-underline-offset:2px;
+}
+.btn-linklike:hover{background:rgba(255,255,255,0.6); color:var(--rust);}
+.repo-options-hint{font-size:11px; color:var(--ink-soft); margin:-8px 0 14px 0; line-height:1.5;}
+
 /* footer nav */
 #panel-footer{
   display:flex; justify-content:space-between; align-items:center; margin-top:30px; padding-top:20px; border-top:1px solid var(--line);
@@ -210,6 +224,16 @@ select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; ba
 .missing-list li{padding:7px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px; display:flex; gap:8px;}
 .missing-list li::before{content:"—"; color:var(--rust);}
 .all-good{color:var(--ok); font-weight:600; font-size:13.5px;}
+
+/* metadata generation inputs */
+.metagen-loader{margin:14px 0; padding:12px; background:var(--paper); border:1px solid var(--line-soft); border-radius:6px;}
+.metagen-loader .ml-label{font-size:12.5px; font-weight:700; color:var(--spruce); margin-bottom:2px;}
+.metagen-loader .ml-desc{font-size:11.5px; color:var(--ink-soft); margin-bottom:8px; line-height:1.5;}
+.metagen-loader .ml-row{display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;}
+.metagen-loader .ml-row > .ml-url{flex:1; min-width:220px;}
+.metagen-loader .ml-status{font-size:11px; color:var(--ink-soft); margin-top:6px;}
+.metagen-subhead{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--spruce-2); margin:16px 0 4px 0; padding-top:14px; border-top:1px solid var(--line-soft);}
+.metagen-subhead:first-of-type{border-top:none; padding-top:0; margin-top:0;}
 
 /* toast */
 #toast{
@@ -233,6 +257,36 @@ select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; ba
 @media print{
   #sidebar,#topbar,.rep-add,.rep-remove,#panel-footer{display:none !important;}
   .panel{display:block !important;}
+}
+
+/* ---------- Printable DMP document (Export DMP button) ---------- */
+#print-doc{display:none;}
+body.printing-dmp-doc #shell{display:none !important;}
+body.printing-dmp-doc #toast{display:none !important;}
+body.printing-dmp-doc #modal-overlay{display:none !important;}
+body.printing-dmp-doc #print-doc{display:block;}
+
+.doc-page{font-family:var(--serif); color:var(--ink); max-width:800px; margin:0 auto; padding:24px;}
+.doc-masthead{text-align:center; margin-bottom:26px; border-bottom:2px solid var(--spruce); padding-bottom:14px;}
+.doc-eyebrow{font-family:var(--sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--rust-dark);}
+.doc-title{font-size:23px; margin:6px 0 2px 0;}
+.doc-subtitle{font-family:var(--sans); font-size:13px; color:var(--ink-soft);}
+.doc-section{margin-bottom:22px;}
+.doc-section h2{font-family:var(--serif); font-size:16px; border-bottom:1px solid var(--line); padding-bottom:4px; margin:0 0 10px 0; color:var(--spruce);}
+.doc-subsection{margin:10px 0 16px 12px; padding-left:12px; border-left:2px solid var(--line-soft);}
+.doc-subsection h3{font-family:var(--serif); font-size:13.5px; margin:0 0 6px 0; color:var(--spruce-2);}
+.doc-field, .doc-person, .doc-list-item{font-family:var(--sans); font-size:12.5px; margin:4px 0; line-height:1.5;}
+.doc-para{margin:9px 0;}
+.doc-para .doc-label{font-family:var(--sans); font-weight:700; font-size:12px; margin-bottom:2px;}
+.doc-block{font-family:var(--sans); font-size:12.5px; line-height:1.55; white-space:pre-wrap;}
+.doc-label{font-weight:700;}
+.doc-role{font-weight:700;}
+.doc-empty{font-family:var(--sans); font-size:12px; font-style:italic; color:var(--ink-soft);}
+.doc-footer{margin-top:30px; font-family:var(--sans); font-size:10.5px; color:var(--ink-soft); text-align:center; border-top:1px solid var(--line); padding-top:8px;}
+
+@media print{
+  body.printing-dmp-doc .doc-page{max-width:none; padding:0;}
+  body.printing-dmp-doc .doc-section{page-break-inside:avoid;}
 }
 </style>
 </head>
@@ -269,6 +323,7 @@ select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; ba
 </div>
 
 <div id="toast"></div>
+<div id="print-doc"></div>
 
 <div id="modal-overlay">
   <div id="modal">
@@ -286,6 +341,11 @@ select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; ba
    STATE
    Shape matches dmp_json_to_dataframe.py exactly -- do not rename keys
    without updating that file too.
+   NOTE: 'purpose' (added under project) maps to mdJSON
+   metadata.resourceInfo.purpose. It is a NEW field not yet present in
+   dmp_json_to_dataframe.py -- add a `rows.push(['projectPurpose', ...])`
+   line there (and to dmp_desktop_app.py's project record builder) to keep
+   the Python side in sync with this interface.
    ========================================================================= */
 const STORAGE_KEY = 'ak_dmp_interface_draft_v1';
 
@@ -315,7 +375,7 @@ function defaultState(){
          updateDate:"", updaterFirstName:"", updaterLastName:"", updaterEmail:"",
          submitDate:"", dmFirstName:"", dmLastName:"", dmEmail:"", documentPath:""},
     project:{region:"", programs:[], costCenters:[], title:"", startDate:"", endDate:"", ongoing:false,
-             abstract:"", keywords:"", uidList:"", spatialDesc:"", spatialURL:""},
+             abstract:"", purpose:"", keywords:"", uidList:"", spatialDesc:"", spatialURL:""},
     contacts:{
       primary:emptyContact(), steward:emptyContact(),
       custodian:Object.assign(emptyContact(),{nonDOI:false}),
@@ -389,8 +449,14 @@ const OPT_DATA_STANDARD = ["Not Applicable","Calendar Year","Congressional Distr
 
 const OPT_BACKUP_FREQ = ["Hourly","Daily","Weekly","Monthly","Other"];
 const OPT_REVIEW_SCHEDULE = ["Annual","Biannual","Quarterly","Monthly","Weekly","Daily"];
-const OPT_REPO_NAME = ["ArcGIS Online","Arctic Data Center","Avian Knowledge Network","eBird","FWS InsideMaps",
+// Repository options are editable at runtime (see the Setup tab) and can be
+// loaded from repository_options.csv. This default list is the fallback
+// used until a custom list is loaded or restored from a previous session.
+const REPO_OPTIONS_DEFAULT = ["ArcGIS Online","Arctic Data Center","Avian Knowledge Network","eBird","FWS InsideMaps",
   "GeoPlatform","MoveBank","USFWS ServCat","USGS ScienceBase","Other"];
+let REPO_OPTIONS = REPO_OPTIONS_DEFAULT.slice();
+let REPO_OPTIONS_SOURCE = 'Built-in default list';
+const REPO_OPTIONS_STORAGE_KEY = 'ak_dmp_repo_options_v1';
 const OPT_RECORDS_SCHEDULE = [
 "PERM-250   Biological Monitoring Files   (N1-022-05-01/101)","PERM-540   Bird Banding Survey   (NC1-22-78-1/28)",
 "PERM-542   Breeding Bird Survey   (NC1-22-78-1/29)","PERM-543   Band Issuance Records   (NC1-22-78-1/25)",
@@ -407,6 +473,623 @@ const OPT_CONTACT_ROLE = ["administrator","author","client","coAuthor","collabor
   "coPrincipalInvestigator","curator","custodian","distributor","editor","funder","logistics","mediator",
   "observer","originator","owner","pointOfContact","principalInvestigator","processor","publisher",
   "resourceProvider","rightsHolder","sponsor","stakeholder","user"];
+
+/* =========================================================================
+   REPOSITORY OPTIONS -- loadable/updatable from repository_options.csv
+   ========================================================================= */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i], next = text[i+1];
+    if(inQuotes){
+      if(c === '"' && next === '"'){ field += '"'; i++; }
+      else if(c === '"'){ inQuotes = false; }
+      else{ field += c; }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ row.push(field); field = ''; }
+      else if(c === '\r'){ /* skip, \n handles the line break */ }
+      else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else{ field += c; }
+    }
+  }
+  if(field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+  return rows.filter(r => !(r.length === 1 && r[0].trim() === ''));
+}
+
+function repoNamesFromCSVText(text){
+  const rows = parseCSV(text);
+  if(rows.length === 0) return [];
+  const dataRows = rows.slice(1);
+  return dataRows.map(r => (r[0] || '').trim()).filter(name => name.length > 0);
+}
+
+function saveRepoOptionsToStorage(names, sourceLabel){
+  try{
+    localStorage.setItem(REPO_OPTIONS_STORAGE_KEY, JSON.stringify({names, sourceLabel, savedAt: new Date().toISOString()}));
+  }catch(e){ /* non-fatal -- list still applies for this session */ }
+}
+
+function applyRepoOptions(names, sourceLabel){
+  if(!names || names.length === 0) return false;
+  REPO_OPTIONS = names;
+  REPO_OPTIONS_SOURCE = sourceLabel;
+  saveRepoOptionsToStorage(names, sourceLabel);
+  if(currentSection === 'setup') rebuildPanel('setup');
+  if(currentSection === 'distribution') rebuildPanel('distribution');
+  return true;
+}
+
+function tryRestoreRepoOptions(){
+  try{
+    const raw = localStorage.getItem(REPO_OPTIONS_STORAGE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      if(saved && Array.isArray(saved.names) && saved.names.length > 0){
+        REPO_OPTIONS = saved.names;
+        REPO_OPTIONS_SOURCE = saved.sourceLabel || 'Custom list (restored)';
+      }
+    }
+  }catch(e){ /* fall back to default, already set */ }
+}
+
+function tryFetchRepoOptionsCSV(){
+  if(location.protocol === 'file:') return;
+  fetch('repository_options.csv').then(r => r.ok ? r.text() : Promise.reject()).then(text => {
+    const names = repoNamesFromCSVText(text);
+    if(names.length > 0){
+      applyRepoOptions(names, 'repository_options.csv (auto-loaded)');
+    }
+  }).catch(() => { /* not reachable -- keep whatever list is already active */ });
+}
+
+/* =========================================================================
+   BRIDGE SCRIPT LOGIC -- ported field-for-field from dmp_json_to_dataframe.py
+   ========================================================================= */
+function _b(val){ return val ? 'True' : 'False'; }
+function _s(val){ return (val === undefined || val === null) ? '' : String(val).trim(); }
+function _costCenterCode(displayValue){
+  if(!displayValue) return '';
+  const m = String(displayValue).match(/\(([A-Z0-9]+?)\)/);
+  return m ? m[1] : displayValue;
+}
+function _phoneDigits(val){ return _s(val).replace(/[^0-9]/g, ''); }
+
+function numberedGroup(rows, baseTag, values, checkbox){
+  values = (values || []).filter(v => v !== null && v !== undefined && v !== '');
+  if(values.length === 0) return;
+  if(values.length === 1){
+    rows.push([baseTag, checkbox ? _b(values[0]) : _s(values[0])]);
+  } else {
+    values.forEach((v, i) => rows.push([baseTag + (i + 1), checkbox ? _b(v) : _s(v)]));
+  }
+}
+
+function pairedGroup(rows, tagPairs, list){
+  const n = (list || []).length;
+  if(n === 0) return;
+  tagPairs.forEach(([tag, key]) => {
+    list.forEach((item, i) => {
+      const field = n === 1 ? tag : tag + (i + 1);
+      rows.push([field, _s(item[key])]);
+    });
+  });
+}
+
+// Faithful port of dmp_json_to_dataframe.build_dataframe()'s row construction.
+function bridgeBuildRows(data){
+  const rows = [];
+  const d = data.dmp || {};
+  rows.push(['dmpVersion', _s(d.version || '1.3')]);
+  rows.push(['dmpCreateDate', _s(d.createDate)]);
+  rows.push(['dmpCreatorFirstName', _s(d.creatorFirstName)]);
+  rows.push(['dmpCreatorLastName', _s(d.creatorLastName)]);
+  rows.push(['dmpCreatorEmail', _s(d.creatorEmail)]);
+  rows.push(['dmpUpdateDate', _s(d.updateDate)]);
+  rows.push(['dmpUpdaterFirstName', _s(d.updaterFirstName)]);
+  rows.push(['dmpUpdaterLastName', _s(d.updaterLastName)]);
+  rows.push(['dmpUpdaterEmail', _s(d.updaterEmail)]);
+  rows.push(['dmpSubmitDate', _s(d.submitDate)]);
+  rows.push(['dmpDMFirstName', _s(d.dmFirstName)]);
+  rows.push(['dmpDMLastName', _s(d.dmLastName)]);
+  rows.push(['dmpDMEmail', _s(d.dmEmail)]);
+
+  const p = data.project || {};
+  rows.push(['fwsRegion', _s(p.region)]);
+  numberedGroup(rows, 'FWSProgram', p.programs || []);
+  numberedGroup(rows, 'costCenter', (p.costCenters || []).map(_costCenterCode));
+  rows.push(['projectTitle', _s(p.title)]);
+  rows.push(['projectStartDate', _s(p.startDate)]);
+  rows.push(['projectEndDate', _s(p.endDate)]);
+  rows.push(['projectOngoing', _b(p.ongoing)]);
+  rows.push(['projectAbstract', _s(p.abstract)]);
+  rows.push(['projectPurpose', _s(p.purpose)]); // NEW -- maps to mdJSON resourceInfo.purpose
+  rows.push(['projectKeywords', _s(p.keywords)]);
+  rows.push(['projectUIDList', _s(p.uidList)]);
+  rows.push(['projectSpatialDesc', _s(p.spatialDesc)]);
+  rows.push(['projectSpatialURL', _s(p.spatialURL)]);
+
+  const c = data.contacts || {};
+  const primary = c.primary || {};
+  rows.push(['contactPrimaryFirstName', _s(primary.firstName)]);
+  rows.push(['contactPrimaryLastName', _s(primary.lastName)]);
+  rows.push(['contactPrimaryPosition', _s(primary.position)]);
+  rows.push(['contactPrimaryEmail', _s(primary.email)]);
+  rows.push(['contactPrimaryPhone', _phoneDigits(primary.phone)]);
+  rows.push(['contactPrimaryOrg', _s(primary.org)]);
+
+  const steward = c.steward || {};
+  rows.push(['contactStewardFirstName', _s(steward.firstName)]);
+  rows.push(['contactStewardLastName', _s(steward.lastName)]);
+  rows.push(['contactStewardPosition', _s(steward.position)]);
+  rows.push(['contactStewardEmail', _s(steward.email)]);
+  rows.push(['contactStewardPhone', _phoneDigits(steward.phone)]);
+  rows.push(['contactStewardOrg', _s(steward.org)]);
+
+  const custodian = c.custodian || {};
+  rows.push(['contactCustodianFirstName', _s(custodian.firstName)]);
+  rows.push(['contactCustodianLastName', _s(custodian.lastName)]);
+  rows.push(['contactCustodianPosition', _s(custodian.position)]);
+  rows.push(['contactCustodianEmail', _s(custodian.email)]);
+  rows.push(['contactCustodianPhone', _phoneDigits(custodian.phone)]);
+  rows.push(['contactCustodianNonDOI', _b(custodian.nonDOI)]);
+  rows.push(['contactCustodianOrg', _s(custodian.org)]);
+
+  const trustee = c.trustee || {};
+  rows.push(['contactTrusteeFirstName', _s(trustee.firstName)]);
+  rows.push(['contactTrusteeLastName', _s(trustee.lastName)]);
+  rows.push(['contactTrusteePosition', _s(trustee.position)]);
+  rows.push(['contactTrusteeEmail', _s(trustee.email)]);
+  rows.push(['contactTrusteePhone', _phoneDigits(trustee.phone)]);
+
+  const others = c.other || [];
+  const nOther = others.length;
+  others.forEach((oc, i) => {
+    const suffix = nOther === 1 ? '' : String(i + 1);
+    rows.push(['contactOtherFirstName' + suffix, _s(oc.firstName)]);
+    rows.push(['contactOtherLastName' + suffix, _s(oc.lastName)]);
+    rows.push(['contactOtherPosition' + suffix, _s(oc.position)]);
+    rows.push(['contactOtherEmail' + suffix, _s(oc.email)]);
+    rows.push(['contactOtherPhone' + suffix, _phoneDigits(oc.phone)]);
+    rows.push(['contactOtherRole' + suffix, _s(oc.role)]);
+    rows.push(['contactOtherOrg' + suffix, _s(oc.org)]);
+  });
+
+  const ms = data.metadataStandards || {};
+  rows.push(['metaStandardMdJSON', _b(ms.mdJSON)]);
+  rows.push(['metaStandardOther', _b(ms.other)]);
+  rows.push(['metaStandardOtherType', _s(ms.otherType)]);
+
+  numberedGroup(rows, 'dataStandard', data.dataStandards || []);
+
+  const st = data.storage || {};
+  [['oneDrive', 'storageOneDrive'], ['teams', 'storageTeams'], ['external', 'storageExternal'],
+   ['network', 'storageNetwork'], ['other', 'storageOther']].forEach(([key, tagPrefix]) => {
+    const block = st[key] || {};
+    rows.push([tagPrefix, _b(block.checked)]);
+    const locKey = ('url' in block) ? 'url' : 'loc';
+    const suffix = (key === 'oneDrive' || key === 'teams' || key === 'network') ? 'URL' : 'Loc';
+    rows.push([tagPrefix + suffix, _s(block[locKey])]);
+  });
+
+  rows.push(['storageLocationURL', _s(st.locationURL)]);
+  rows.push(['backupFreq', _s(st.backupFreq)]);
+  rows.push(['backupFreqOther', _s(st.backupFreqOther)]);
+  rows.push(['filePermissions', _s(st.filePermissions)]);
+  rows.push(['dataReviewSchedule', _s(st.reviewSchedule)]);
+
+  const dist = data.distribution || {};
+  rows.push(['rdrCheckbox', _b(dist.rdrChecked)]);
+  rows.push(['rdrURL', _s(dist.rdrURL)]);
+  rows.push(['projectShortTitle', _s(dist.shortTitle)]);
+
+  pairedGroup(rows, [['repoName', 'name'], ['repoURL', 'url']], dist.repositories || []);
+  pairedGroup(rows, [['recordsSchedule', 'schedule'], ['recordsType', 'type'], ['recordsDisposition', 'disposition']], dist.recordsSchedules || []);
+
+  (data.products || []).forEach((prod, i) => {
+    const idx = i + 1;
+    rows.push(['productNo' + idx, String(idx)]);
+    rows.push(['productTitle' + idx, _s(prod.title)]);
+    rows.push(['productName' + idx, _s(prod.name)]);
+    rows.push(['productURL' + idx, _s(prod.url)]);
+    rows.push(['productFileVersioning' + idx, _s(prod.fileVersioning)]);
+    rows.push(['productMetaURL' + idx, _s(prod.metaURL)]);
+    rows.push(['productSkipMeta' + idx, _b(prod.skipMeta)]);
+    rows.push(['productResourceType' + idx, _s(prod.resourceType)]);
+    rows.push(['productFormat' + idx, _s(prod.format)]);
+    rows.push(['productFormatOther' + idx, _s(prod.formatOther)]);
+    rows.push(['productAbstract' + idx, _s(prod.abstract)]);
+
+    (prod.originators || []).forEach((orig, j) => {
+      const base = idx + '-' + (j + 1);
+      rows.push(['productOriginatorFirstName' + base, _s(orig.firstName)]);
+      rows.push(['productOriginatorLastName' + base, _s(orig.lastName)]);
+      rows.push(['productOriginatorEmail' + base, _s(orig.email)]);
+      rows.push(['productOriginatorNonDOI' + base, _b(orig.nonDOI)]);
+      rows.push(['productOriginatorOrg' + base, _s(orig.org)]);
+    });
+
+    rows.push(['productQualityAssurance' + idx, _s(prod.qualityAssurance)]);
+    rows.push(['productQualityControl' + idx, _s(prod.qualityControl)]);
+    rows.push(['productResources' + idx, _s(prod.resources)]);
+
+    (prod.metaAuthors || []).forEach((ma, j) => {
+      const base = idx + '-' + (j + 1);
+      rows.push(['productMetaAuthorFirstName' + base, _s(ma.firstName)]);
+      rows.push(['productMetaAuthorLastName' + base, _s(ma.lastName)]);
+      rows.push(['productMetaAuthorEmail' + base, _s(ma.email)]);
+      rows.push(['productMetaAuthorOrg' + base, _s(ma.org)]);
+    });
+
+    rows.push(['productRestriction' + idx, _s(prod.restriction)]);
+    rows.push(['productRestrictionJustification' + idx, _s(prod.restrictionJustification)]);
+    rows.push(['productAdditional' + idx, _s(prod.additional)]);
+    rows.push(['productSpatialMatchesProject' + idx, _b(prod.spatialMatchesProject)]);
+    rows.push(['productSpatialDesc' + idx, _s(prod.spatialDesc)]);
+    rows.push(['productSpatialURL' + idx, _s(prod.spatialURL)]);
+  });
+
+  const srcList = data.sourceData || [];
+  const nSrc = srcList.length;
+  srcList.forEach((src, i) => {
+    const suffix = nSrc === 1 ? '' : String(i + 1);
+    rows.push(['sourceDataDescription' + suffix, _s(src.description)]);
+    rows.push(['sourceDataLoc' + suffix, _s(src.location)]);
+  });
+
+  (data.samples || []).forEach((samp, i) => {
+    const idx = i + 1;
+    rows.push(['sampleNo' + idx, String(idx)]);
+    rows.push(['sampleName' + idx, _s(samp.name)]);
+    rows.push(['sampleDescription' + idx, _s(samp.description)]);
+    rows.push(['sampleLabel' + idx, _s(samp.label)]);
+    rows.push(['sampleQAQC' + idx, _s(samp.qaqc)]);
+    rows.push(['sampleLoc' + idx, _s(samp.loc)]);
+    rows.push(['sampleChain' + idx, _s(samp.chain)]);
+    rows.push(['sampleFate' + idx, _s(samp.fate)]);
+    rows.push(['sampleProducts' + idx, _s(samp.products)]);
+  });
+
+  return rows;
+}
+
+/* =========================================================================
+   METADATA GENERATION INPUTS (configured on the Setup tab)
+   ========================================================================= */
+let CONTACTS_EXPORT = null;
+let CONTACTS_EXPORT_SOURCE = 'Not loaded';
+let REGION_PROGRAM_EXPORT = null;
+let REGION_PROGRAM_EXPORT_SOURCE = 'Not loaded';
+
+const METADATA_GEN_STORAGE_KEY = 'ak_dmp_metadata_gen_v1';
+const METADATA_GEN_SETTINGS = {
+  contactsURL: '',
+  regionProgramURL: '',
+  attachProfilesSchemas: false,
+  includeDisclaimer: true,
+  projProfileURL: 'https://raw.githubusercontent.com/USFWS/ak-md-profiles/main/ak-proj-profile.json',
+  projSchemaURL: 'https://raw.githubusercontent.com/USFWS/ak-md-profiles/main/ak-proj-schema.json',
+  prodProfileURL: 'https://raw.githubusercontent.com/USFWS/ak-md-profiles/main/ak-prod-profile.json',
+  prodSchemaURL: 'https://raw.githubusercontent.com/USFWS/ak-md-profiles/main/ak-prod-schema.json',
+  dictProfileURL: 'https://raw.githubusercontent.com/USFWS/ak-md-profiles/main/ak-data-dict-profile.json',
+  dictSchemaURL: 'https://raw.githubusercontent.com/USFWS/ak-md-profiles/main/ak-data-dict-schema.json',
+  // Python-pipeline paths. In the plain-browser build these are reference
+  // text only (there is no Python runtime here) -- see
+  // buildNotebookSettingsSnippet() / "Copy to clipboard" on the Setup tab.
+  // In the pywebview DESKTOP build (see dmp_desktop_app.py), these SAME
+  // fields are also sent to the real Python process via
+  // window.pywebview.api.set_config()/get_config() (see syncDesktopConfig
+  // below) and used directly by run_metadata_draft().
+  bridgeDir: '',
+  contactFolder: '',
+  tmpDir: '',
+  dmpSpreadsheet: '',
+  regionProgramContactsPath: '',
+  contactsExportPath: ''
+};
+
+/* =========================================================================
+   DESKTOP MODE (pywebview) DETECTION
+   ========================================================================= */
+let DESKTOP_MODE = false;
+window.addEventListener('pywebviewready', () => {
+  DESKTOP_MODE = true;
+  if(window.pywebview && window.pywebview.api && window.pywebview.api.get_config){
+    window.pywebview.api.get_config().then(cfg => {
+      ['bridgeDir','contactFolder','tmpDir','dmpSpreadsheet','regionProgramContactsPath','contactsExportPath'].forEach(k => {
+        if(cfg[k]) METADATA_GEN_SETTINGS[k] = cfg[k];
+      });
+      saveMetadataGenToStorage();
+      if(currentSection === 'setup' || currentSection === 'review') rebuildPanel(currentSection);
+    });
+  }
+});
+
+function syncDesktopConfig(key, value){
+  if(DESKTOP_MODE && window.pywebview && window.pywebview.api && window.pywebview.api.set_config){
+    window.pywebview.api.set_config({[key]: value});
+  }
+}
+
+function copyTextToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(
+      () => toast('Copied to clipboard.'),
+      () => fallbackCopyToClipboard(text)
+    );
+  } else {
+    fallbackCopyToClipboard(text);
+  }
+}
+function fallbackCopyToClipboard(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try{
+    document.execCommand('copy');
+    toast('Copied to clipboard.');
+  }catch(e){
+    toast('Could not copy automatically -- select the text and copy manually.');
+  }
+  document.body.removeChild(ta);
+}
+
+function buildNotebookSettingsSnippet(){
+  const g = METADATA_GEN_SETTINGS;
+  const esc = (v) => (v || '').replace(/'/g, "\\'");
+  return [
+    "# Paste into the SETTINGS cell of DMP_to_metadata_from_interface.ipynb",
+    "dmp_json_path = r'<path to your exported dmp_data.json>'  # update after each export",
+    "bridge_dir = r'" + esc(g.bridgeDir) + "'",
+    "region_program_contacts_path = r'" + esc(g.regionProgramContactsPath) + "'",
+    "contact_folder = r'" + esc(g.contactFolder) + "'",
+    "tmp_dir = r'" + esc(g.tmpDir) + "'",
+    "dmp_spreadsheet = r'" + esc(g.dmpSpreadsheet) + "'"
+  ].join('\n');
+}
+
+function parseContactsExportJSON(rawObj){
+  const list = [];
+  const arr = (rawObj && Array.isArray(rawObj.data)) ? rawObj.data : [];
+  arr.forEach(rec => {
+    try{
+      const inner = JSON.parse(rec.attributes.json);
+      list.push({
+        uuid: inner.contactId,
+        name: inner.name,
+        isOrganization: !!inner.isOrganization,
+        emails: (inner.electronicMailAddress || []).map(e => String(e).toLowerCase()),
+        memberOfOrganization: inner.memberOfOrganization || [],
+        rawRecord: rec
+      });
+    }catch(e){ /* skip malformed/unexpected entries */ }
+  });
+  return list;
+}
+
+function saveMetadataGenToStorage(){
+  try{
+    localStorage.setItem(METADATA_GEN_STORAGE_KEY, JSON.stringify({
+      settings: METADATA_GEN_SETTINGS,
+      contactsExport: CONTACTS_EXPORT ? CONTACTS_EXPORT.map(c => c.rawRecord) : null,
+      contactsExportSource: CONTACTS_EXPORT_SOURCE,
+      regionProgramExport: REGION_PROGRAM_EXPORT ? REGION_PROGRAM_EXPORT.map(c => c.rawRecord) : null,
+      regionProgramExportSource: REGION_PROGRAM_EXPORT_SOURCE
+    }));
+  }catch(e){ /* non-fatal, e.g. quota exceeded on a very large contacts file */ }
+}
+
+function tryRestoreMetadataGen(){
+  try{
+    const raw = localStorage.getItem(METADATA_GEN_STORAGE_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    if(saved.settings) Object.assign(METADATA_GEN_SETTINGS, saved.settings);
+    if(Array.isArray(saved.contactsExport) && saved.contactsExport.length){
+      CONTACTS_EXPORT = parseContactsExportJSON({data: saved.contactsExport});
+      CONTACTS_EXPORT_SOURCE = saved.contactsExportSource || 'Restored from last session';
+    }
+    if(Array.isArray(saved.regionProgramExport) && saved.regionProgramExport.length){
+      REGION_PROGRAM_EXPORT = parseContactsExportJSON({data: saved.regionProgramExport});
+      REGION_PROGRAM_EXPORT_SOURCE = saved.regionProgramExportSource || 'Restored from last session';
+    }
+  }catch(e){ /* fall back to nothing loaded */ }
+}
+
+let metagenLoaderCounter = 0;
+function buildFileUrlLoader(opts){
+  metagenLoaderCounter++;
+  const inputId = 'metagen-file-' + metagenLoaderCounter;
+
+  const wrap = h('div', {class:'metagen-loader'});
+  wrap.appendChild(h('div', {class:'ml-label'}, [opts.label]));
+  wrap.appendChild(h('div', {class:'ml-desc'}, [opts.desc]));
+
+  const urlInput = h('input', {type:'text', placeholder:'https://... or a relative path (works if this page is hosted online)'});
+  urlInput.value = METADATA_GEN_SETTINGS[opts.urlKey] || '';
+  urlInput.addEventListener('input', () => { METADATA_GEN_SETTINGS[opts.urlKey] = urlInput.value; saveMetadataGenToStorage(); });
+
+  const fetchBtn = h('button', {type:'button', class:'btn-linklike', onclick: () => {
+    const url = METADATA_GEN_SETTINGS[opts.urlKey];
+    if(!url){ toast('Enter a URL first.'); return; }
+    fetch(url).then(r => r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(text => opts.onLoadText(text, url + ' (fetched)'))
+      .catch(err => toast('Could not fetch that URL (' + err.message + '). Try "Browse file…" instead.'));
+  }}, ['Fetch from URL']);
+
+  const fileInput = h('input', {type:'file', accept:'.json,application/json', id:inputId, style:'display:none;'});
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => opts.onLoadText(reader.result, file.name + ' (loaded ' + new Date().toLocaleDateString() + ')');
+    reader.readAsText(file);
+    fileInput.value = '';
+  });
+  const browseBtn = h('button', {type:'button', class:'btn-linklike', onclick: () => fileInput.click()}, ['Browse file…']);
+
+  const rowActions = [fetchBtn, browseBtn, fileInput];
+  if(opts.onClear){
+    rowActions.push(h('button', {type:'button', class:'btn-linklike', onclick: opts.onClear}, ['Clear']));
+  }
+
+  const row = h('div', {class:'ml-row'}, [
+    (() => { const d = h('div', {class:'ml-url'}); d.appendChild(urlInput); return d; })(),
+    ...rowActions
+  ]);
+  wrap.appendChild(row);
+  wrap.appendChild(h('div', {class:'ml-status'}, [opts.getStatus()]));
+  return wrap;
+}
+
+/* =========================================================================
+   REGION / PROGRAM CONTACT RESOLUTION -- ported from region_program_contacts.py
+   ========================================================================= */
+const REGION_CONTACT_NAME = {
+  "1 – Pacific Region": "U.S. Fish and Wildlife Service, Pacific Region",
+  "2 – Southwest Region": "U.S. Fish and Wildlife Service, Southwest Region",
+  "3 – Midwest Region": "U.S. Fish and Wildlife Service, Midwest Region",
+  "4 – Southeast Region": "U.S. Fish and Wildlife Service, Southeast Region",
+  "5 – Northeast Region": "U.S Fish and Wildlife Service, Northeast Region", // sic
+  "6 – Mountain-Prairie Region": "U.S. Fish and Wildlife Service, Mountain Prairie Region",
+  "7 – Alaska Region": "U.S. Fish and Wildlife Service, Alaska Region",
+  "8 – Pacific Southwest Region": "U.S. Fish and Wildlife Service, Pacific Southwest Region"
+};
+const PROGRAM_CONTACT_NAME = {
+  "Ecological Services": "Ecological Services",
+  "Fish and Aquatic Conservation": "Fisheries and Aquatic Conservation",
+  "Migratory Birds": "Migratory Bird Management",
+  "National Wildlife Refuge System": "National Wildlife Refuge System",
+  "Office of Subsistence Management": "Office of Subsistence Management",
+  "Science Applications": "Science Applications"
+};
+
+function findContactByName(list, name){
+  if(!list || !name) return null;
+  return list.find(c => c.name === name) || null;
+}
+
+function resolveRegionProgramContacts(){
+  let regionContact = null;
+  const programContacts = [];
+
+  const regionValue = state.project.region;
+  if(regionValue){
+    const contactName = REGION_CONTACT_NAME[regionValue];
+    const rec = contactName ? findContactByName(REGION_PROGRAM_EXPORT, contactName) : null;
+    if(rec){
+      regionContact = rec;
+      referencedContactUuids.add(rec.uuid);
+    } else {
+      metadataGenWarnings.push('No contact match found for FWS Region "' + regionValue + '" -- it will not be added as a contact. (Load the Region/Program contacts file, or check REGION_CONTACT_NAME in region_program_contacts.py.)');
+    }
+  }
+  (state.project.programs || []).forEach(pv => {
+    if(!pv) return;
+    const contactName = PROGRAM_CONTACT_NAME[pv];
+    const rec = contactName ? findContactByName(REGION_PROGRAM_EXPORT, contactName) : null;
+    if(rec){
+      programContacts.push(rec);
+      referencedContactUuids.add(rec.uuid);
+    } else {
+      metadataGenWarnings.push('No contact match found for FWS Program "' + pv + '" -- it will not be added as a contact.');
+    }
+  });
+
+  return {regionContact, programContacts};
+}
+
+/* =========================================================================
+   CONTACT RESOLUTION
+   ========================================================================= */
+let newContactRecords = [];
+let referencedContactUuids = new Set();
+let metadataGenWarnings = [];
+
+function uuidv4(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    const r = Math.random() * 16 | 0, v = (c === 'x') ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function buildStubContactRecord(person, opts){
+  opts = opts || {};
+  const uuid = uuidv4();
+  const name = opts.isOrganization
+    ? (opts.orgName || 'Unnamed organization')
+    : ([person.firstName, person.lastName].filter(Boolean).join(' ').trim() || 'Unnamed contact');
+  const inner = {
+    contactId: uuid,
+    isOrganization: !!opts.isOrganization,
+    name: name,
+    memberOfOrganization: opts.orgUuid ? [opts.orgUuid] : [],
+    logoGraphic: [],
+    phone: (!opts.isOrganization && person.phone) ? [{phoneNumber: _phoneDigits(person.phone)}] : [],
+    address: [],
+    electronicMailAddress: (!opts.isOrganization && person.email) ? [person.email] : [],
+    onlineResource: [],
+    hoursOfService: [],
+    externalIdentifier: []
+  };
+  if(!opts.isOrganization){
+    inner.contactType = 'federal';
+    if(person.position) inner.positionName = person.position;
+  }
+  const outer = {
+    id: uuid.slice(0, 8),
+    attributes: {json: JSON.stringify(inner), 'date-updated': new Date().toISOString(), rev: null},
+    type: 'contacts',
+    meta: {title: name, icon: 'users', export: true}
+  };
+  return {
+    uuid: uuid, name: name, isOrganization: !!opts.isOrganization,
+    emails: (!opts.isOrganization && person.email) ? [String(person.email).toLowerCase()] : [],
+    memberOfOrganization: opts.orgUuid ? [opts.orgUuid] : [],
+    rawRecord: outer
+  };
+}
+
+function resolveContact(person){
+  if(!person) return null;
+  const first = (person.firstName || '').trim();
+  const last = (person.lastName || '').trim();
+  const email = (person.email || '').trim().toLowerCase();
+  if(!first && !last && !email) return null;
+
+  if(email && CONTACTS_EXPORT){
+    const match = CONTACTS_EXPORT.find(c => c.emails.indexOf(email) !== -1);
+    if(match){ referencedContactUuids.add(match.uuid); return match; }
+  }
+
+  let orgUuid = null;
+  if(person.org){
+    let orgMatch = CONTACTS_EXPORT ? CONTACTS_EXPORT.find(c => c.isOrganization && c.name === person.org) : null;
+    if(!orgMatch){
+      orgMatch = buildStubContactRecord({}, {isOrganization: true, orgName: person.org});
+      CONTACTS_EXPORT = CONTACTS_EXPORT ? CONTACTS_EXPORT.concat([orgMatch]) : [orgMatch];
+      newContactRecords.push(orgMatch);
+    }
+    orgUuid = orgMatch.uuid;
+    referencedContactUuids.add(orgUuid);
+  }
+
+  const stub = buildStubContactRecord(
+    {firstName: first, lastName: last, email: person.email, phone: person.phone, position: person.position},
+    {orgUuid: orgUuid}
+  );
+  CONTACTS_EXPORT = CONTACTS_EXPORT ? CONTACTS_EXPORT.concat([stub]) : [stub];
+  newContactRecords.push(stub);
+  referencedContactUuids.add(stub.uuid);
+  return stub;
+}
+
+function roleEntry(contact, role){ return {party: [{contactId: contact.uuid}], role: role}; }
 
 /* =========================================================================
    SMALL DOM HELPERS
@@ -502,9 +1185,6 @@ function grid(cols, children){
 
 /* =========================================================================
    REPEATABLE LIST HELPER
-   Renders `array` inside `container`, using `itemRenderFn(item, index)` to
-   build each item's DOM. Handles add / remove and re-renders just this
-   container (not the whole page) so unrelated inputs keep focus.
    ========================================================================= */
 function renderRepeatable(container, array, opts){
   container.innerHTML = '';
@@ -534,6 +1214,10 @@ function renderRepeatable(container, array, opts){
 
 /* =========================================================================
    SECTION DEFINITIONS
+   'Distribution & Records' is now two separate tabs: 'distribution'
+   (Regional Data Repository + public repositories) and 'records'
+   (Records Schedule & Disposition). Every numbered section after it shifts
+   up by one (Data Products is now Section 8, etc.).
    ========================================================================= */
 const SECTIONS = [
   {id:'dmp', label:'DMP Information', build:buildDmpPanel},
@@ -541,11 +1225,13 @@ const SECTIONS = [
   {id:'contacts', label:'Personnel & Contacts', build:buildContactsPanel},
   {id:'metadata', label:'Metadata & Data Standards', build:buildMetadataPanel},
   {id:'storage', label:'Storage, Backup & Review', build:buildStoragePanel},
-  {id:'distribution', label:'Distribution & Records', build:buildDistributionPanel},
+  {id:'distribution', label:'Distribution', build:buildDistributionPanel},
+  {id:'records', label:'Records Schedule', build:buildRecordsPanel},
   {id:'products', label:'Data Products', build:buildProductsPanel},
   {id:'source', label:'Source Data', build:buildSourceDataPanel},
   {id:'samples', label:'Physical Samples', build:buildSamplesPanel},
   {id:'review', label:'Review & Export', build:buildReviewPanel},
+  {id:'setup', label:'Setup', build:buildSetupPanel},
 ];
 
 function panelHead(eyebrow, title, desc){
@@ -647,10 +1333,12 @@ function buildProjectPanel(idx){
     }
   });
 
-  p.appendChild(card('Project Title & Timeline', null, [
+  /* ---- Project Title (own box) ---- */
+  p.appendChild(card('Project Title', null, [
     fieldWrap('Project title', true, 'A title should convey meaningful information, such as focal species, season, method, purpose, spatial extent, and/or temporal extent.', textareaInput(proj,'title',{rows:2})),
   ]));
 
+  /* ---- Timeline (own box, separate from Title) ---- */
   const endDateWrap = h('div', {id:'end-date-wrap'});
   const buildEndDate = () => {
     endDateWrap.innerHTML = '';
@@ -662,7 +1350,7 @@ function buildProjectPanel(idx){
   };
   buildEndDate();
 
-  p.appendChild(card(null, null, [
+  p.appendChild(card('Timeline', null, [
     grid(2, [
       fieldWrap('Project start date', true, 'yyyy-mm-dd', textInput(proj,'startDate',{type:'date'})),
       (() => { const d = h('div'); d.appendChild(endDateWrap); return d; })()
@@ -674,8 +1362,18 @@ function buildProjectPanel(idx){
     fieldWrap('Project abstract', true, 'Consider copying and pasting this from the project proposal or investigation plan.', textareaInput(proj,'abstract',{rows:5}))
   ]));
 
-  p.appendChild(card('Keywords & Identifiers', null, [
-    fieldWrap('Keywords', false, 'Comma-separated, e.g. "walrus, haulout, Bering Sea"', textInput(proj,'keywords')),
+  /* ---- Purpose (NEW, optional -- maps to mdJSON resourceInfo.purpose) ---- */
+  p.appendChild(card('Purpose', 'Optional. A brief statement of why the project or its data are being collected — distinct from the Abstract, which summarizes what the project is. Maps to the mdJSON metadata.resourceInfo.purpose field.', [
+    fieldWrap('Project purpose', false, 'e.g. "To inform harvest management decisions for Pacific walrus by documenting current haulout use."', textareaInput(proj,'purpose',{rows:3}))
+  ]));
+
+  /* ---- Keywords (own box) ---- */
+  p.appendChild(card('Keywords', null, [
+    fieldWrap('Keywords', false, 'Comma-separated, e.g. "walrus, haulout, Bering Sea"', textInput(proj,'keywords'))
+  ]));
+
+  /* ---- Identifiers (own box, separate from Keywords) ---- */
+  p.appendChild(card('Identifiers', null, [
     fieldWrap('Project identifier code / tracking number', false, 'If this is a Refuge project, list the PRIMR ID (required). If your project does not already have a tracking code, one will be generated by your data manager.', textInput(proj,'uidList'))
   ]));
 
@@ -867,12 +1565,55 @@ function buildStoragePanel(idx){
   return p;
 }
 
-/* ---------- 6. Distribution & Records ---------- */
+/* ---------- 6. Distribution (Regional Data Repository + public repositories) ---------- */
+let repoFileInputCounter = 0;
+function renderRepoOptionsPanel(container){
+  container.innerHTML = '';
+  repoFileInputCounter++;
+  const inputId = 'repo-csv-input-' + repoFileInputCounter;
+
+  const fileInput = h('input', {type:'file', accept:'.csv,text/csv', id:inputId, style:'display:none;'});
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const names = repoNamesFromCSVText(reader.result);
+      if(names.length === 0){
+        alert('No repository names found in that file. Expecting a header row followed by one repository name per row in the first column.');
+        return;
+      }
+      applyRepoOptions(names, file.name + ' (loaded ' + new Date().toLocaleDateString() + ')');
+      toast('Loaded ' + names.length + ' repository options from ' + file.name);
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
+  });
+
+  const row = h('div', {class:'repo-options-row'}, [
+    h('span', {class:'repo-options-label'}, [
+      'Repository list: ', h('strong',{},[String(REPO_OPTIONS.length)+' options']),
+      ' — ', REPO_OPTIONS_SOURCE
+    ]),
+    h('span', {class:'repo-options-actions'}, [
+      h('button', {type:'button', class:'btn-linklike', onclick:() => fileInput.click()}, ['Load CSV…']),
+      REPO_OPTIONS_SOURCE !== 'Built-in default list' ? h('button', {type:'button', class:'btn-linklike', onclick:() => {
+        applyRepoOptions(REPO_OPTIONS_DEFAULT.slice(), 'Built-in default list');
+        toast('Reset to the built-in default repository list.');
+      }}, ['Reset to default']) : null,
+      fileInput
+    ])
+  ]);
+  container.appendChild(row);
+  container.appendChild(h('div', {class:'repo-options-hint'},
+    ['Update the master list by editing repository_options.csv (first column = repository name; the first row is treated as a header and skipped) and loading it here. This updates the dropdown for everyone using this copy of the file, on this computer, until reset or reloaded.']));
+}
+
 function buildDistributionPanel(idx){
   const d = state.distribution;
   const p = h('div', {class:'panel', id:'panel-distribution'});
-  p.appendChild(panelHead('Section 6', 'Distribution & Records',
-    'Regional Data Repository, public data sharing repositories, and records disposition schedules.'));
+  p.appendChild(panelHead('Section 6', 'Distribution',
+    'Regional Data Repository and public data sharing repositories for this project. See the Records Schedule tab for records disposition.'));
 
   const rdrUrlWrap = h('div', {id:'rdr-url-wrap'});
   const buildRdrUrl = () => {
@@ -890,15 +1631,33 @@ function buildDistributionPanel(idx){
   ]));
 
   const repoContainer = h('div');
-  p.appendChild(card('Public Data Sharing Repositories', 'Unless otherwise specified, all data and products are assumed to be public domain (open access). Identify publicly accessible repositories where a copy of the data and metadata will be shared. Refuge staff are required to preserve data assets in ServCat.', [repoContainer]));
+  p.appendChild(card('Public Data Sharing Repositories', 'Unless otherwise specified, all data and products are assumed to be public domain (open access). Identify publicly accessible repositories where a copy of the data and metadata will be shared. Refuge staff are required to preserve data assets in ServCat.', [
+    h('div', {class:'note'}, [
+      'The list of repository options in the dropdown below is managed on the ',
+      h('a', {href:'#', onclick:(e)=>{ e.preventDefault(); showSection('setup'); }}, ['Setup']),
+      ' tab. Currently: ', h('strong',{},[String(REPO_OPTIONS.length) + ' options']), ' — ', REPO_OPTIONS_SOURCE, '.'
+    ]),
+    repoContainer
+  ]));
   renderRepeatable(repoContainer, d.repositories, {
     itemLabel:(v,i)=> v.name || ('Repository '+(i+1)), emptyText:'No repository added.', addLabel:'+ Add a repository',
     makeNew: emptyRepo,
     renderItem:(item)=> grid(2, [
-      fieldWrap('Repository', false, null, selectInput(item,'name',OPT_REPO_NAME,{placeholder:'Select a repository...'})),
+      fieldWrap('Repository', false, null, selectInput(item,'name',REPO_OPTIONS,{placeholder:'Select a repository...'})),
       fieldWrap('URL', false, null, textInput(item,'url')),
     ])
   });
+
+  p.appendChild(panelFooter(idx));
+  return p;
+}
+
+/* ---------- 7. Records Schedule (split out of the former "Distribution & Records" tab) ---------- */
+function buildRecordsPanel(idx){
+  const d = state.distribution;
+  const p = h('div', {class:'panel', id:'panel-records'});
+  p.appendChild(panelHead('Section 7', 'Records Schedule & Disposition',
+    'Records disposition schedules applicable to this project\u2019s data and products. See the Distribution tab for the Regional Data Repository and public repositories.'));
 
   const recContainer = h('div');
   p.appendChild(card('Records Schedule and Disposition', 'Your data manager or Regional Records Manager can assist in determining the applicable records schedule(s) and disposition(s). You may also type a schedule name if it is not found in the list.', [recContainer]));
@@ -918,10 +1677,10 @@ function buildDistributionPanel(idx){
   return p;
 }
 
-/* ---------- 7. Data Products ---------- */
+/* ---------- 8. Data Products ---------- */
 function buildProductsPanel(idx){
   const p = h('div', {class:'panel', id:'panel-products'});
-  p.appendChild(panelHead('Section 7', 'Data Products',
+  p.appendChild(panelHead('Section 8', 'Data Products',
     'Detail each distinct digital data product anticipated to be produced during the project — spreadsheets, databases, statistical models, maps, photo/video collections, reports, etc. Sections where information does not yet exist can be set to "TBD".'));
 
   const prodContainer = h('div');
@@ -1018,10 +1777,10 @@ function renderProductItem(prod){
   return wrap;
 }
 
-/* ---------- 8. Source Data ---------- */
+/* ---------- 9. Source Data ---------- */
 function buildSourceDataPanel(idx){
   const p = h('div', {class:'panel', id:'panel-source'});
-  p.appendChild(panelHead('Section 8', 'Source Data',
+  p.appendChild(panelHead('Section 9', 'Source Data',
     'Identify existing source data that will be used during the project but that are not produced by the project — e.g. GIS layers used in spatial analyses, weather station data, etc.'));
 
   const srcContainer = h('div');
@@ -1039,10 +1798,10 @@ function buildSourceDataPanel(idx){
   return p;
 }
 
-/* ---------- 9. Physical Samples ---------- */
+/* ---------- 10. Physical Samples ---------- */
 function buildSamplesPanel(idx){
   const p = h('div', {class:'panel', id:'panel-samples'});
-  p.appendChild(panelHead('Section 9', 'Physical Samples',
+  p.appendChild(panelHead('Section 10', 'Physical Samples',
     'Optional. Describe the management of physical samples collected or analyzed during this project. Sections where information does not yet exist can be set to "TBD".'));
 
   const sampContainer = h('div');
@@ -1066,7 +1825,7 @@ function buildSamplesPanel(idx){
   return p;
 }
 
-/* ---------- 10. Review & Export ---------- */
+/* ---------- 11. Review & Export ---------- */
 function requiredChecks(){
   const missing = [];
   const s = state;
@@ -1117,7 +1876,7 @@ function requiredChecks(){
 
 function buildReviewPanel(idx){
   const p = h('div', {class:'panel', id:'panel-review'});
-  p.appendChild(panelHead('Section 10', 'Review & Export',
+  p.appendChild(panelHead('Section 11', 'Review & Export',
     'Check for missing required fields, then export a DMP data file. That file feeds directly into the DMP_to_metadata notebook in place of the old Word document.'));
 
   const missing = requiredChecks();
@@ -1142,15 +1901,36 @@ function buildReviewPanel(idx){
   summaryCard.appendChild(buildSummaryTable());
   p.appendChild(summaryCard);
 
+  /* ---- Metadata generation inputs now live on the Setup tab ---- */
+  const metaGenNote = h('div', {class:'card'});
+  metaGenNote.appendChild(h('h3',{},['Metadata Generation Inputs']));
+  metaGenNote.appendChild(h('p', {class:'card-desc'}, [
+    'Contacts export, Region/Program contacts, profile/schema URLs, and Python pipeline paths are configured on the ',
+    h('a', {href:'#', onclick:(e)=>{ e.preventDefault(); showSection('setup'); }}, ['Setup']),
+    ' tab. Currently loaded: ',
+    h('strong',{},[CONTACTS_EXPORT ? (CONTACTS_EXPORT.length + ' contact' + (CONTACTS_EXPORT.length===1?'':'s')) : 'no contacts export']),
+    ', ',
+    h('strong',{},[REGION_PROGRAM_EXPORT ? (REGION_PROGRAM_EXPORT.length + ' org contact' + (REGION_PROGRAM_EXPORT.length===1?'':'s')) : 'no Region/Program contacts']),
+    '.'
+  ]));
+  p.appendChild(metaGenNote);
+
   const exportCard = h('div', {class:'card'});
   exportCard.appendChild(h('h3',{},['Export']));
   exportCard.appendChild(h('p', {class:'card-desc'}, [
-    'Exporting writes a ', h('code',{},['dmp_data.json']), ' style file containing everything entered in this form. Hand that file (plus the accompanying ',
-    h('code',{},['dmp_json_to_dataframe.py']), ' bridge script) to the DMP_to_metadata notebook to continue exactly where the Word-template workflow left off.'
+    h('strong',{},['Export DMP']), ' opens your browser\'s print dialog with a formatted version of this plan (choose "Save as PDF" as the destination). ',
+    DESKTOP_MODE
+      ? h('span',{},[h('strong',{},['Run metadata draft creator']), ' calls the REAL ', h('code',{},['dmp_json_to_dataframe.py']), ' and ', h('code',{},['region_program_contacts.py']), ' directly (see ', h('code',{},['dmp_desktop_app.py']), ') \u2014 no JavaScript approximation. It resolves contacts against the files configured on the Setup tab, resolves FWS Region/Program admin contacts, and saves the result via a native Save dialog.'])
+      : h('span',{},[h('strong',{},['Export draft metadata']), ' runs a JavaScript port of ', h('code',{},['dmp_json_to_dataframe.py']), '\u2019s field mapping, resolving contacts against the files loaded on the Setup tab and the FWS Region/Program admin contacts the same way ', h('code',{},['region_program_contacts.py']), ' does. It produces real mdJSON content, but not mdEditor\u2019s internal record/profile envelope, so treat it as a thorough draft, not a guaranteed drag-and-drop mdEditor import. (Running the desktop app build instead calls the real Python scripts directly \u2014 see ', h('code',{},['dmp_desktop_app.py']), '.)']),
+    ' Either way, hand ', h('code',{},['dmp_data.json']), ' to the DMP_to_metadata notebook for the fully resolved, import-ready file.'
   ]));
-  const btnRow = h('div', {style:'display:flex; gap:10px; margin-top:6px;'});
-  btnRow.appendChild(h('button', {class:'btn btn-primary', onclick:doExport}, ['Export DMP data (.json)']));
-  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:()=>window.print()}, ['Print / save as PDF']));
+  const btnRow = h('div', {style:'display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;'});
+  btnRow.appendChild(h('button', {class:'btn btn-primary', onclick:exportDmpDocument}, ['Export DMP']));
+  if(DESKTOP_MODE){
+    btnRow.appendChild(h('button', {class:'btn btn-primary', onclick:doRunMetadataDraftDesktop}, ['Run metadata draft creator']));
+  }
+  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:doExportDraftMetadata}, [DESKTOP_MODE ? 'Export draft metadata (JS fallback)' : 'Export draft metadata']));
+  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:doExport}, ['Export data file (.json)']));
   exportCard.appendChild(btnRow);
   p.appendChild(exportCard);
 
@@ -1181,6 +1961,7 @@ function buildSummaryTable(){
     ['Program(s)', s.project.programs.join(', ')],
     ['Cost center(s)', s.project.costCenters.join('; ')],
     ['Timeline', s.project.startDate + ' → ' + (s.project.ongoing ? 'ongoing' : (s.project.endDate||'—'))],
+    ['Purpose', s.project.purpose || '—'],
   ]);
 
   group('Contacts', [
@@ -1200,6 +1981,157 @@ function buildSummaryTable(){
   return frag;
 }
 
+/* ---------- Setup (shared file locations / pipeline configuration) ---------- */
+function buildSetupPanel(){
+  const p = h('div', {class:'panel', id:'panel-setup'});
+  p.appendChild(panelHead('Configuration', 'Setup',
+    'Point this interface at your organization\'s shared files once. These choices are remembered on this computer (localStorage) and are never sent anywhere except when you click "Fetch from URL" or enable profile/schema attachment below. Nothing on this tab is written into dmp_data.json.'));
+
+  /* ---- Repository dropdown options ---- */
+  const repoCard = h('div', {class:'card'});
+  repoCard.appendChild(h('h3',{},['Public Repository Dropdown List']));
+  repoCard.appendChild(h('p',{class:'card-desc'},['Controls the options offered in the "Repository" dropdown under Distribution. Loadable from repository_options.csv.']));
+  const repoPanel = h('div');
+  repoCard.appendChild(repoPanel);
+  renderRepoOptionsPanel(repoPanel);
+  p.appendChild(repoCard);
+
+  /* ---- Contacts export ---- */
+  const contactsCard = h('div', {class:'card'});
+  contactsCard.appendChild(h('h3',{},['Contacts Export']));
+  contactsCard.appendChild(h('p',{class:'card-desc'},['An mdEditor contacts export. Used by "Export draft metadata" / "Run metadata draft creator" (on the Review & Export tab) to match this DMP\u2019s contacts by email and reuse their real UUIDs instead of creating duplicates.']));
+  contactsCard.appendChild(buildFileUrlLoader({
+    label: 'Contacts export (JSON)',
+    desc: 'Matches the shape of your AK_contacts_profiles export.',
+    urlKey: 'contactsURL',
+    getStatus: () => CONTACTS_EXPORT ? (CONTACTS_EXPORT.length + ' contact' + (CONTACTS_EXPORT.length===1?'':'s') + ' loaded — ' + CONTACTS_EXPORT_SOURCE) : 'Not loaded.',
+    onLoadText: (text, sourceLabel) => {
+      let obj; try{ obj = JSON.parse(text); }catch(e){ toast('Could not parse that file as JSON.'); return; }
+      const list = parseContactsExportJSON(obj);
+      if(list.length === 0){ toast('No contact records found in that file.'); return; }
+      CONTACTS_EXPORT = list; CONTACTS_EXPORT_SOURCE = sourceLabel;
+      saveMetadataGenToStorage();
+      toast('Loaded ' + list.length + ' contacts.');
+      rebuildPanel('setup');
+    },
+    onClear: () => { CONTACTS_EXPORT = null; CONTACTS_EXPORT_SOURCE = 'Not loaded'; saveMetadataGenToStorage(); toast('Cleared contacts export.'); rebuildPanel('setup'); }
+  }));
+  p.appendChild(contactsCard);
+
+  /* ---- FWS Region / Program contacts ---- */
+  const rpCard = h('div', {class:'card'});
+  rpCard.appendChild(h('h3',{},['FWS Region / Program Contacts']));
+  rpCard.appendChild(h('p',{class:'card-desc'},['The mdEditor export of the FWS Region and FWS Program organization contact records (see FWSRegion_Program_Contacts_mdeditor-*.json). Used to add the project\u2019s selected Region/Program as administrator/distributor/publisher contacts on generated metadata.']));
+  rpCard.appendChild(buildFileUrlLoader({
+    label: 'FWS Region / Program contacts (JSON)',
+    desc: 'Same file format as the contacts export above, scoped to just the Region/Program org records.',
+    urlKey: 'regionProgramURL',
+    getStatus: () => REGION_PROGRAM_EXPORT ? (REGION_PROGRAM_EXPORT.length + ' org contact' + (REGION_PROGRAM_EXPORT.length===1?'':'s') + ' loaded — ' + REGION_PROGRAM_EXPORT_SOURCE) : 'Not loaded.',
+    onLoadText: (text, sourceLabel) => {
+      let obj; try{ obj = JSON.parse(text); }catch(e){ toast('Could not parse that file as JSON.'); return; }
+      const list = parseContactsExportJSON(obj);
+      if(list.length === 0){ toast('No contact records found in that file.'); return; }
+      REGION_PROGRAM_EXPORT = list; REGION_PROGRAM_EXPORT_SOURCE = sourceLabel;
+      saveMetadataGenToStorage();
+      toast('Loaded ' + list.length + ' org contacts.');
+      rebuildPanel('setup');
+    },
+    onClear: () => { REGION_PROGRAM_EXPORT = null; REGION_PROGRAM_EXPORT_SOURCE = 'Not loaded'; saveMetadataGenToStorage(); toast('Cleared Region/Program contacts.'); rebuildPanel('setup'); }
+  }));
+  p.appendChild(rpCard);
+
+  /* ---- Profile & schema attachments ---- */
+  const psCard = h('div', {class:'card'});
+  psCard.appendChild(h('h3',{},['Profile & Schema Attachments (optional)']));
+  psCard.appendChild(h('p',{class:'card-desc'},['If enabled, "Export draft metadata" fetches the JSON at these URLs and includes it in the output for reference. Requires outbound internet access — a URL that can\'t be reached is skipped automatically and noted as a warning in the exported file.']));
+  psCard.appendChild(checkboxRow(
+    'Attach mdEditor profiles & schemas',
+    null,
+    METADATA_GEN_SETTINGS, 'attachProfilesSchemas', {onChange: () => saveMetadataGenToStorage()}
+  ));
+  const psGrid = h('div', {class:'grid cols-2', style:'margin-top:8px;'});
+  [['projProfileURL','Project profile URL'],['projSchemaURL','Project schema URL'],
+   ['prodProfileURL','Product profile URL'],['prodSchemaURL','Product schema URL'],
+   ['dictProfileURL','Data dictionary profile URL'],['dictSchemaURL','Data dictionary schema URL']
+  ].forEach(([key,label]) => {
+    const inp = h('input', {type:'text'});
+    inp.value = METADATA_GEN_SETTINGS[key] || '';
+    inp.addEventListener('input', () => { METADATA_GEN_SETTINGS[key] = inp.value; saveMetadataGenToStorage(); });
+    psGrid.appendChild(fieldWrap(label, false, null, inp));
+  });
+  psCard.appendChild(psGrid);
+  psCard.appendChild(checkboxRow(
+    'Include standard open-access data disclaimer text',
+    'Matches the incl_disclaimer option in the notebook.',
+    METADATA_GEN_SETTINGS, 'includeDisclaimer', {onChange: () => saveMetadataGenToStorage()}
+  ));
+  p.appendChild(psCard);
+
+  /* ---- Python pipeline paths (for the notebook / desktop app) ---- */
+  const pyCard = h('div', {class:'card'});
+  pyCard.appendChild(h('h3',{},['Python Pipeline Paths']));
+  pyCard.appendChild(h('p',{class:'card-desc'},[
+    DESKTOP_MODE
+      ? 'These paths are used directly by the desktop app\u2019s bridge scripts and by the copy-paste snippet below for the full notebook.'
+      : 'The browser can\u2019t run Python, so these aren\u2019t used by anything in this interface directly \u2014 but recording them here means your team has one place to look up the shared paths, and you can copy a ready-to-paste settings block for '
+  ].concat(DESKTOP_MODE ? [] : [h('code',{},['DMP_to_metadata_from_interface.ipynb']), ' below.'])));
+
+  if(DESKTOP_MODE){
+    pyCard.appendChild(h('div', {class:'note'}, [
+      'Desktop app detected — these paths are used directly by ', h('strong',{},['Run metadata draft creator']),
+      ' (Review & Export tab), in addition to the copy-paste snippet below. Use ', h('strong',{},['Browse…']),
+      ' to pick real folders/files; changes save automatically.'
+    ]));
+  }
+
+  const snippetArea = h('textarea', {rows:'7', readonly:'readonly', style:'font-family:var(--mono); font-size:11.5px; white-space:pre;'});
+  function refreshSnippet(){ snippetArea.value = buildNotebookSettingsSnippet(); }
+
+  const pyFields = [
+    ['bridgeDir', 'Bridge script folder', 'Folder containing dmp_json_to_dataframe.py and region_program_contacts.py', 'folder'],
+    ['contactFolder', 'Contacts directory', 'Folder the notebook scans for the most recently-dated contacts export file', 'folder'],
+    ['tmpDir', 'mdJSON templates folder', 'Folder containing the mdEd_*.txt / project.txt / product.txt template files', 'folder'],
+    ['dmpSpreadsheet', 'National DMPs Excel file', 'Path to the SharePoint-synced National_DMPs.xlsx used for the SharePoint list import', 'file'],
+    ['regionProgramContactsPath', 'Region/Program contacts export path', 'Path the desktop app reads directly to resolve Region/Program admin contacts (FWSRegion_Program_Contacts_mdeditor-*.json)', 'file'],
+    ['contactsExportPath', 'Contacts export path (desktop app)', 'Path the desktop app reads directly to match contacts by email \u2014 separate from the copy loaded above, which only feeds the browser-only draft generator', 'file']
+  ];
+  pyFields.forEach(([key,label,hint,kind]) => {
+    const inp = h('input', {type:'text', placeholder:'\\\\server\\share\\...'});
+    inp.value = METADATA_GEN_SETTINGS[key] || '';
+    inp.addEventListener('input', () => {
+      METADATA_GEN_SETTINGS[key] = inp.value; saveMetadataGenToStorage(); refreshSnippet(); syncDesktopConfig(key, inp.value);
+    });
+    if(DESKTOP_MODE){
+      const row = h('div', {style:'display:flex; gap:8px; align-items:flex-end;'});
+      const fieldDiv = h('div', {style:'flex:1;'});
+      fieldDiv.appendChild(fieldWrap(label, false, hint, inp));
+      row.appendChild(fieldDiv);
+      row.appendChild(h('button', {type:'button', class:'btn btn-ghost btn-sm', style:'margin-bottom:2px;', onclick: () => {
+        const pick = kind === 'folder' ? window.pywebview.api.pick_folder() : window.pywebview.api.pick_file();
+        pick.then(path => {
+          if(!path) return;
+          inp.value = path;
+          METADATA_GEN_SETTINGS[key] = path;
+          saveMetadataGenToStorage();
+          refreshSnippet();
+          syncDesktopConfig(key, path);
+        });
+      }}, ['Browse…']));
+      pyCard.appendChild(row);
+    } else {
+      pyCard.appendChild(fieldWrap(label, false, hint, inp));
+    }
+  });
+
+  pyCard.appendChild(h('div', {class:'subsection-label'}, ['Paste into the notebook\u2019s settings cell']));
+  refreshSnippet();
+  pyCard.appendChild(snippetArea);
+  pyCard.appendChild(h('button', {type:'button', class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick: () => copyTextToClipboard(snippetArea.value)}, ['Copy to clipboard']));
+  p.appendChild(pyCard);
+
+  return p;
+}
+
 /* =========================================================================
    NAV / RENDER ORCHESTRATION
    ========================================================================= */
@@ -1209,10 +2141,16 @@ function renderNav(){
   const ul = document.getElementById('nav');
   ul.innerHTML = '';
   SECTIONS.forEach((sec, i) => {
+    if(sec.id === 'setup'){
+      ul.appendChild(h('li', {style:'padding:12px 22px 2px 22px; margin-top:4px;'}, [
+        h('div', {style:'border-top:1px solid rgba(255,255,255,0.12); padding-top:10px; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#6E9186;'}, ['Configuration'])
+      ]));
+    }
     const li = h('li', {});
     if(sec.id === currentSection) li.className = 'active';
+    const numLabel = sec.id === 'setup' ? '⚙' : String(i+1).padStart(2,'0');
     const btn = h('button', {onclick:()=>showSection(sec.id)}, [
-      h('span',{class:'num'}, [String(i+1).padStart(2,'0')]),
+      h('span',{class:'num'}, [numLabel]),
       h('span',{}, [sec.label]),
       h('span',{class:'status'}, [''])
     ]);
@@ -1231,17 +2169,22 @@ function renderAllPanels(){
   });
 }
 
+function rebuildPanel(id){
+  const old = document.getElementById('panel-' + id);
+  if(!old) return;
+  const idx = SECTIONS.findIndex(s => s.id === id);
+  if(idx === -1) return;
+  const wasActive = old.classList.contains('active');
+  const fresh = SECTIONS[idx].build(idx);
+  if(wasActive) fresh.classList.add('active');
+  old.replaceWith(fresh);
+}
+
 function showSection(id){
   currentSection = id;
   renderNav();
-  if(id === 'review'){
-    // The review panel summarizes live state -- rebuild it fresh every time
-    // it's opened so the completeness check and summary reflect current data.
-    const old = document.getElementById('panel-review');
-    if(old){
-      const idx = SECTIONS.findIndex(s => s.id === 'review');
-      old.replaceWith(buildReviewPanel(idx));
-    }
+  if(id === 'review' || id === 'setup'){
+    rebuildPanel(id);
   }
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   const target = document.getElementById('panel-' + id);
@@ -1300,10 +2243,530 @@ function doExport(){
   toast('Exported ' + a.download);
 }
 
+/* =========================================================================
+   EXPORT DMP (formatted document -> browser print -> "Save as PDF")
+   ========================================================================= */
+function escapeHtml(str){
+  return String(str==null ? '' : str).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function docField(label, value){
+  const v = (value === undefined || value === null || value === '') ? '—' : escapeHtml(value);
+  return '<div class="doc-field"><span class="doc-label">'+escapeHtml(label)+':</span> <span class="doc-value">'+v+'</span></div>';
+}
+
+function docPara(label, value){
+  return '<div class="doc-para"><div class="doc-label">'+escapeHtml(label)+'</div>'
+       + '<div class="doc-block">'+escapeHtml(value || '—')+'</div></div>';
+}
+
+function docPersonLine(person, roleLabel){
+  if(!person) return '';
+  const name = [person.firstName, person.lastName].filter(Boolean).join(' ').trim() || '—';
+  const bits = [name];
+  if(person.position) bits.push(person.position);
+  if(person.email) bits.push(person.email);
+  if(person.phone) bits.push(person.phone);
+  if(person.org) bits.push(person.org);
+  return '<div class="doc-person"><span class="doc-role">'+escapeHtml(roleLabel)+':</span> '+escapeHtml(bits.join(' · '))+'</div>';
+}
+
+function buildDmpDocumentHTML(){
+  const s = state;
+  const parts = [];
+
+  parts.push('<div class="doc-page">');
+  parts.push(
+    '<div class="doc-masthead">'
+    + '<div class="doc-eyebrow">USFWS · Alaska Region</div>'
+    + '<h1 class="doc-title">'+escapeHtml(s.project.title || 'Untitled Project')+'</h1>'
+    + '<div class="doc-subtitle">Data Management Plan</div>'
+    + '</div>'
+  );
+
+  // 1. DMP Information
+  parts.push('<div class="doc-section"><h2>1. DMP Information</h2>');
+  parts.push(docField('Date created', s.dmp.createDate));
+  parts.push(docField('Creator', [s.dmp.creatorFirstName, s.dmp.creatorLastName].filter(Boolean).join(' ')));
+  parts.push(docField('Creator email', s.dmp.creatorEmail));
+  if(s.dmp.updateDate || s.dmp.updaterFirstName || s.dmp.updaterLastName){
+    parts.push(docField('Date last updated', s.dmp.updateDate));
+    parts.push(docField('Updated by', [s.dmp.updaterFirstName, s.dmp.updaterLastName].filter(Boolean).join(' ')));
+  }
+  if(s.dmp.submitDate || s.dmp.dmFirstName || s.dmp.dmLastName){
+    parts.push(docField('Data manager review date', s.dmp.submitDate));
+    parts.push(docField('Data manager', [s.dmp.dmFirstName, s.dmp.dmLastName].filter(Boolean).join(' ')));
+  }
+  if(s.dmp.documentPath) parts.push(docField('Saved plan location', s.dmp.documentPath));
+  parts.push('</div>');
+
+  // 2. Project Details
+  parts.push('<div class="doc-section"><h2>2. Project Details</h2>');
+  parts.push(docField('FWS Region', s.project.region));
+  parts.push(docField('FWS Program(s)', s.project.programs.join('; ')));
+  parts.push(docField('Cost Center(s)', s.project.costCenters.join('; ')));
+  parts.push(docField('Timeline', (s.project.startDate||'—') + ' \u2192 ' + (s.project.ongoing ? 'ongoing' : (s.project.endDate||'—'))));
+  parts.push(docPara('Abstract', s.project.abstract));
+  if(s.project.purpose) parts.push(docPara('Purpose', s.project.purpose));
+  parts.push(docField('Keywords', s.project.keywords));
+  parts.push(docField('Project identifier / tracking number', s.project.uidList));
+  parts.push(docField('Spatial extent description', s.project.spatialDesc));
+  parts.push(docField('Spatial extent URL', s.project.spatialURL));
+  parts.push('</div>');
+
+  // 3. Contacts
+  parts.push('<div class="doc-section"><h2>3. Personnel &amp; Contacts</h2>');
+  parts.push(docPersonLine(s.contacts.primary, 'Primary contact'));
+  parts.push(docPersonLine(s.contacts.steward, 'Data steward'));
+  parts.push(docPersonLine(s.contacts.custodian, 'Data custodian'));
+  parts.push(docPersonLine(s.contacts.trustee, 'Data trustee'));
+  s.contacts.other.forEach(function(o,i){
+    parts.push(docPersonLine(o, 'Other contact ' + (i+1) + (o.role ? ' (' + o.role + ')' : '')));
+  });
+  parts.push('</div>');
+
+  // 4. Metadata & Data Standards
+  parts.push('<div class="doc-section"><h2>4. Metadata &amp; Data Standards</h2>');
+  const mdStds = [];
+  if(s.metadataStandards.mdJSON) mdStds.push('mdEditor / mdJSON');
+  if(s.metadataStandards.other) mdStds.push(s.metadataStandards.otherType || 'Other (unspecified)');
+  parts.push(docField('Metadata standard(s)', mdStds.join('; ')));
+  parts.push(docField('Data standard(s)', s.dataStandards.join('; ')));
+  parts.push('</div>');
+
+  // 5. Storage, Backup & Review
+  parts.push('<div class="doc-section"><h2>5. Data Sharing, Security &amp; Preservation</h2>');
+  const storageLocs = [];
+  if(s.storage.oneDrive.checked) storageLocs.push('OneDrive (' + (s.storage.oneDrive.url || 'no URL given') + ')');
+  if(s.storage.teams.checked) storageLocs.push('Teams (' + (s.storage.teams.url || 'no URL given') + ')');
+  if(s.storage.external.checked) storageLocs.push('External hard drive (' + (s.storage.external.loc || 'no location given') + ')');
+  if(s.storage.network.checked) storageLocs.push('Network drive (' + (s.storage.network.url || 'no URL given') + ')');
+  if(s.storage.other.checked) storageLocs.push('Other (' + (s.storage.other.loc || 'no location given') + ')');
+  parts.push(docField('Storage location URL', s.storage.locationURL));
+  parts.push(docField('Storage location(s)', storageLocs.join('; ')));
+  parts.push(docField('Backup frequency', s.storage.backupFreq === 'Other' ? s.storage.backupFreqOther : s.storage.backupFreq));
+  parts.push(docPara('Access restrictions', s.storage.filePermissions));
+  parts.push(docField('Data review schedule', s.storage.reviewSchedule));
+  parts.push('</div>');
+
+  // 6. Distribution
+  parts.push('<div class="doc-section"><h2>6. Distribution</h2>');
+  parts.push(docField('Regional Data Repository', s.distribution.rdrChecked ? (s.distribution.rdrURL || 'Requested (folder to be created)') : 'Not used'));
+  if(s.distribution.repositories.length){
+    parts.push('<div class="doc-label">Public data sharing repositories</div>');
+    s.distribution.repositories.forEach(function(r){
+      parts.push('<div class="doc-list-item">' + escapeHtml(r.name || 'Repository') + (r.url ? ' — ' + escapeHtml(r.url) : '') + '</div>');
+    });
+  }
+  parts.push('</div>');
+
+  // 7. Records Schedule
+  parts.push('<div class="doc-section"><h2>7. Records Schedule &amp; Disposition</h2>');
+  if(s.distribution.recordsSchedules.length === 0) parts.push('<p class="doc-empty">No records schedule listed.</p>');
+  s.distribution.recordsSchedules.forEach(function(r,i){
+    parts.push(
+      '<div class="doc-list-item"><strong>Records schedule ' + (i+1) + ':</strong> ' + escapeHtml(r.schedule || '—')
+      + '<br><em>Type:</em> ' + escapeHtml(r.type || '—')
+      + '<br><em>Disposition:</em> ' + escapeHtml(r.disposition || '—') + '</div>'
+    );
+  });
+  parts.push('</div>');
+
+  // 8. Data Products
+  parts.push('<div class="doc-section"><h2>8. Data Products</h2>');
+  if(s.products.length === 0) parts.push('<p class="doc-empty">No data products listed.</p>');
+  s.products.forEach(function(p,i){
+    parts.push('<div class="doc-subsection"><h3>8.' + (i+1) + ' ' + escapeHtml(p.title || 'Untitled product') + '</h3>');
+    parts.push(docField('File name', p.name));
+    parts.push(docField('File URL / path', p.url));
+    parts.push(docField('Resource type', p.resourceType));
+    parts.push(docField('Format', p.format === 'other' ? p.formatOther : p.format));
+    parts.push(docPara('Description', p.abstract));
+    p.originators.forEach(function(o,j){ parts.push(docPersonLine(o, 'Originator ' + (j+1))); });
+    parts.push(docPara('Quality assurance', p.qualityAssurance));
+    parts.push(docPara('Quality control', p.qualityControl));
+    parts.push(docPara('Resource requirements', p.resources));
+    p.metaAuthors.forEach(function(o,j){ parts.push(docPersonLine(o, 'Metadata author ' + (j+1))); });
+    parts.push(docField('Access restriction', p.restriction));
+    if(p.restrictionJustification) parts.push(docPara('Restriction justification', p.restrictionJustification));
+    parts.push('</div>');
+  });
+  parts.push('</div>');
+
+  // 9. Source Data
+  parts.push('<div class="doc-section"><h2>9. Source Data</h2>');
+  if(s.sourceData.length === 0) parts.push('<p class="doc-empty">No source data listed.</p>');
+  s.sourceData.forEach(function(sd,i){
+    parts.push('<div class="doc-list-item"><strong>Source data ' + (i+1) + ':</strong> ' + escapeHtml(sd.description || '—') + (sd.location ? ' — ' + escapeHtml(sd.location) : '') + '</div>');
+  });
+  parts.push('</div>');
+
+  // 10. Physical Samples
+  parts.push('<div class="doc-section"><h2>10. Physical Samples</h2>');
+  if(s.samples.length === 0) parts.push('<p class="doc-empty">No physical samples listed.</p>');
+  s.samples.forEach(function(sm,i){
+    parts.push('<div class="doc-subsection"><h3>10.' + (i+1) + ' ' + escapeHtml(sm.name || 'Sample ' + (i+1)) + '</h3>');
+    parts.push(docPara('Description', sm.description));
+    parts.push(docField('Labeling standards', sm.label));
+    parts.push(docPara('QA/QC procedures', sm.qaqc));
+    parts.push(docField('Storage location & conditions', sm.loc));
+    parts.push(docPara('Chain of custody', sm.chain));
+    parts.push(docPara('Fate after analysis', sm.fate));
+    parts.push(docField('Data products derived', sm.products));
+    parts.push('</div>');
+  });
+  parts.push('</div>');
+
+  parts.push('<div class="doc-footer">Generated ' + escapeHtml(new Date().toLocaleString()) + ' from the AK Region DMP Interface (v' + escapeHtml(s.dmp.version || '1.3') + ').</div>');
+  parts.push('</div>');
+
+  return parts.join('');
+}
+
+function exportDmpDocument(){
+  const container = document.getElementById('print-doc');
+  container.innerHTML = buildDmpDocumentHTML();
+  document.body.classList.add('printing-dmp-doc');
+  function cleanup(){
+    document.body.classList.remove('printing-dmp-doc');
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(function(){ window.print(); }, 60);
+}
+
+/* =========================================================================
+   DRAFT METADATA GENERATION (browser JS build)
+   ========================================================================= */
+const DRAFT_NOTICE_TEXT =
+  'DRAFT preview, generated entirely in the browser (no Python runtime is available inside this ' +
+  'offline HTML file). The field-mapping logic is a line-for-line JavaScript port of ' +
+  'dmp_json_to_dataframe.py. Contacts are resolved against the contacts / Region-Program files ' +
+  'loaded in the interface, using the same matching rules as the notebook and ' +
+  'region_program_contacts.py: matched by email (contacts) or exact org name (region/program); ' +
+  'unmatched people/orgs get a new, validly-shaped mdEditor contact record instead of a placeholder ' +
+  'name. If "Attach profiles & schemas" was enabled, the fetched JSON is included under ' +
+  'profilesSchemas. What this does NOT do: reproduce mdEditor\'s own internal record/profile/schema ' +
+  'ID envelope (those are assigned by mdEditor itself), extract a PRIMR ID from the RDR path, embed ' +
+  'geoJSON geometry from a local spatial file, or write the SharePoint Excel export. For a fully ' +
+  'resolved, import-ready mdEditor file (and the SharePoint export), run ' +
+  'DMP_to_metadata_from_interface.ipynb against the exported dmp_data.json -- or use the desktop ' +
+  'app build (dmp_desktop_app.py), which calls the real Python scripts directly.';
+
+function fetchAllProfilesSchemas(){
+  const cfg = METADATA_GEN_SETTINGS;
+  const targets = [
+    ['projectProfile', cfg.projProfileURL], ['projectSchema', cfg.projSchemaURL],
+    ['productProfile', cfg.prodProfileURL], ['productSchema', cfg.prodSchemaURL],
+    ['dictionaryProfile', cfg.dictProfileURL], ['dictionarySchema', cfg.dictSchemaURL]
+  ];
+  return Promise.all(targets.map(([label, url]) => {
+    if(!url) return Promise.resolve(null);
+    return fetch(url)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(json => ({label, url, json}))
+      .catch(err => { metadataGenWarnings.push('Could not fetch ' + label + ' from ' + url + ': ' + err.message); return null; });
+  })).then(results => results.filter(Boolean));
+}
+
+function buildProjectRecord(resolved, projectUuid, productUuids){
+  const proj = state.project;
+
+  const pointOfContact = [];
+  if(resolved.steward) pointOfContact.push(roleEntry(resolved.steward, 'pointOfContact'));
+  if(resolved.regionContact) pointOfContact.push(roleEntry(resolved.regionContact, 'administrator'));
+  if(resolved.custodian) pointOfContact.push(roleEntry(resolved.custodian, 'custodian'));
+  resolved.others.forEach(o => pointOfContact.push(roleEntry(o, 'custodian'))); // mirrors the notebook's Other->custodian mapping
+  resolved.programContacts.forEach(pc => pointOfContact.push(roleEntry(pc, 'administrator')));
+  if(resolved.trustee) pointOfContact.push(roleEntry(resolved.trustee, 'owner'));
+
+  const metadataContact = [];
+  if(resolved.creator){ metadataContact.push(roleEntry(resolved.creator, 'author')); metadataContact.push(roleEntry(resolved.creator, 'pointOfContact')); }
+  if(resolved.updater) metadataContact.push(roleEntry(resolved.updater, 'author'));
+  if(resolved.regionContact) metadataContact.push(roleEntry(resolved.regionContact, 'publisher'));
+
+  const citationResponsibleParty = [];
+  if(resolved.steward) citationResponsibleParty.push(roleEntry(resolved.steward, 'pointOfContact'));
+  if(resolved.regionContact) citationResponsibleParty.push(roleEntry(resolved.regionContact, 'publisher'));
+
+  const keywordList = (proj.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+  const keyword = keywordList.length ? [{
+    keyword: keywordList.map(k => ({keyword: k})),
+    keywordType: 'theme',
+    thesaurus: {identifier: [{identifier: 'custom'}], title: 'Keywords from Data Management Plan'},
+    fullPath: true
+  }] : undefined;
+
+  const dateArr = [];
+  if(proj.startDate) dateArr.push({date: proj.startDate + 'T00:00:00.000Z', dateType: 'start'});
+  if(!proj.ongoing && proj.endDate) dateArr.push({date: proj.endDate + 'T00:00:00.000Z', dateType: 'end'});
+
+  let timePeriod;
+  if(proj.startDate || (!proj.ongoing && proj.endDate)){
+    timePeriod = {};
+    if(proj.startDate) timePeriod.startDateTime = proj.startDate + 'T00:00:00.000Z';
+    if(!proj.ongoing && proj.endDate) timePeriod.endDateTime = proj.endDate + 'T00:00:00.000Z';
+  }
+
+  let extent;
+  if(proj.spatialDesc || proj.spatialURL){
+    extent = [{description: proj.spatialDesc || undefined, spatialFileURL: proj.spatialURL || undefined}];
+  }
+
+  let projectStatus = 'proposed';
+  const today = new Date();
+  const startD = proj.startDate ? new Date(proj.startDate) : null;
+  const endD = (!proj.ongoing && proj.endDate) ? new Date(proj.endDate) : null;
+  if(endD && today >= endD) projectStatus = 'completed';
+  else if(startD && today >= startD) projectStatus = 'onGoing';
+
+  let resourceDistribution;
+  if(state.distribution.rdrChecked && state.distribution.rdrURL){
+    resourceDistribution = [{
+      description: 'Project folder on internal server, accessible to U.S. Fish and Wildlife Service staff.',
+      distributor: [{
+        contact: resolved.regionContact ? {party: [{contactId: resolved.regionContact.uuid}], role: 'distributor'} : undefined,
+        transferOption: [{onlineOption: [{uri: state.distribution.rdrURL, function: 'fileAccess'}]}]
+      }]
+    }];
+  } else {
+    const servcatRepo = (state.distribution.repositories || []).find(r => r.name === 'USFWS ServCat' && r.url);
+    if(servcatRepo){
+      resourceDistribution = [{
+        description: 'USFWS ServCat',
+        distributor: [{transferOption: [{onlineOption: [{uri: servcatRepo.url, function: 'information'}]}]}]
+      }];
+    }
+  }
+
+  return {
+    schema: {name: 'mdJson', version: '2.7.0'},
+    metadata: {
+      metadataInfo: {
+        defaultMetadataLocale: {characterSet: 'UTF-8', country: 'USA', language: 'eng'},
+        metadataContact: metadataContact.length ? metadataContact : undefined,
+        metadataDate: [{date: new Date().toISOString(), dateType: 'creation'}, {date: new Date().toISOString(), dateType: 'lastUpdate'}],
+        metadataIdentifier: {identifier: projectUuid, namespace: 'urn:uuid'},
+        metadataStatus: 'initiated'
+      },
+      resourceDistribution: resourceDistribution,
+      resourceInfo: {
+        abstract: proj.abstract || undefined,
+        purpose: proj.purpose || undefined, // NEW -- maps DMP "Purpose" field to mdJSON resourceInfo.purpose
+        citation: {
+          date: dateArr.length ? dateArr : undefined,
+          title: proj.title || 'Untitled project',
+          responsibleParty: citationResponsibleParty.length ? citationResponsibleParty : undefined
+        },
+        defaultResourceLocale: {characterSet: 'UTF-8', country: 'USA', language: 'eng'},
+        keyword: keyword,
+        pointOfContact: pointOfContact.length ? pointOfContact : undefined,
+        resourceType: [{name: state.distribution.shortTitle || proj.title || 'Untitled project', type: 'project'}],
+        status: [projectStatus],
+        timePeriod: timePeriod,
+        extent: extent
+      },
+      associatedResource: productUuids.length ? productUuids.map(u => ({associationType: 'product', mdRecordId: u})) : undefined
+    }
+  };
+}
+
+function buildProductRecord(resolved, prod, productUuid, projectUuid){
+  const originators = (prod.originators || []).map(o => resolveContact(o)).filter(Boolean);
+  const metaAuthors = (prod.metaAuthors || []).map(o => resolveContact(o)).filter(Boolean);
+
+  const pointOfContact = [];
+  if(resolved.steward) pointOfContact.push(roleEntry(resolved.steward, 'pointOfContact'));
+  if(resolved.regionContact) pointOfContact.push(roleEntry(resolved.regionContact, 'administrator'));
+  originators.forEach(o => pointOfContact.push(roleEntry(o, 'originator')));
+  if(resolved.custodian) pointOfContact.push(roleEntry(resolved.custodian, 'custodian'));
+
+  const metadataContact = [];
+  metaAuthors.forEach(a => metadataContact.push(roleEntry(a, 'author')));
+  if(resolved.steward) metadataContact.push(roleEntry(resolved.steward, 'pointOfContact'));
+  if(resolved.regionContact) metadataContact.push(roleEntry(resolved.regionContact, 'publisher'));
+
+  const citationResponsibleParty = [];
+  if(resolved.steward) citationResponsibleParty.push(roleEntry(resolved.steward, 'pointOfContact'));
+  if(resolved.regionContact) citationResponsibleParty.push(roleEntry(resolved.regionContact, 'publisher'));
+
+  const skip = ['', 'na', 'n/a', 'tbd'];
+  const lineageParts = [];
+  if(prod.qualityAssurance && skip.indexOf(prod.qualityAssurance.trim().toLowerCase()) === -1) lineageParts.push('Quality assurance: ' + prod.qualityAssurance);
+  if(prod.qualityControl && skip.indexOf(prod.qualityControl.trim().toLowerCase()) === -1) lineageParts.push('Quality control: ' + prod.qualityControl);
+
+  const constraintEntry = {
+    type: 'use',
+    legal: {accessConstraint: ['licenceUnrestricted'], useConstraint: ['unrestricted']},
+    security: {classification: 'unclassified'}
+  };
+  if(prod.restriction && prod.restriction !== 'open access'){
+    constraintEntry.legal.accessConstraint = [prod.restriction];
+    if(prod.restrictionJustification) constraintEntry.useLimitation = [prod.restrictionJustification];
+  } else if(METADATA_GEN_SETTINGS.includeDisclaimer){
+    constraintEntry.useLimitation = ['Although these data have been processed successfully on a computer system at the U.S. Fish and Wildlife Service, no warranty expressed or implied is made regarding the display or utility of the data for other purposes, nor on all computer systems, nor shall the act of distribution constitute any such warranty.'];
+  }
+
+  let resourceDistribution;
+  if(prod.url && /ifw7ro-file\.fws\.doi\.net[\\/]datamgt/i.test(prod.url)){
+    resourceDistribution = [{
+      distributor: [{
+        contact: resolved.regionContact ? {party: [{contactId: resolved.regionContact.uuid}], role: 'distributor'} : undefined,
+        transferOption: [{onlineOption: [{uri: prod.url.replace(/\\/g, '/'), function: 'fileAccess'}]}]
+      }]
+    }];
+  }
+
+  return {
+    schema: {name: 'mdJson', version: '2.7.0'},
+    metadata: {
+      metadataInfo: {
+        metadataIdentifier: {identifier: productUuid, namespace: 'urn:uuid'},
+        metadataStatus: 'initiated',
+        defaultMetadataLocale: {language: 'eng', characterSet: 'UTF-8', country: 'USA'},
+        metadataContact: metadataContact.length ? metadataContact : undefined,
+        metadataDate: [{date: new Date().toISOString(), dateType: 'creation'}, {date: new Date().toISOString(), dateType: 'lastUpdate'}]
+      },
+      resourceInfo: {
+        resourceType: [{type: prod.resourceType || undefined, name: prod.name || prod.title || 'Untitled product'}],
+        status: ['proposed'],
+        citation: {title: prod.title || 'Untitled product', responsibleParty: citationResponsibleParty.length ? citationResponsibleParty : undefined},
+        abstract: prod.abstract || undefined,
+        defaultResourceLocale: {language: 'eng', characterSet: 'UTF-8', country: 'USA'},
+        pointOfContact: pointOfContact.length ? pointOfContact : undefined,
+        constraint: [constraintEntry],
+        format: (prod.format === 'other' ? prod.formatOther : prod.format) || undefined
+      },
+      resourceLineage: lineageParts.length ? [{statement: lineageParts.join('\n\n')}] : undefined,
+      resourceDistribution: resourceDistribution,
+      associatedResource: [{associationType: 'parentProject', mdRecordId: projectUuid}]
+    }
+  };
+}
+
+function buildDraftMetadataBundle(){
+  newContactRecords = [];
+  metadataGenWarnings = [];
+  referencedContactUuids = new Set();
+
+  const bridgeRows = bridgeBuildRows(state);
+
+  const resolved = {
+    steward: resolveContact(state.contacts.steward),
+    custodian: resolveContact(state.contacts.custodian),
+    trustee: resolveContact(state.contacts.trustee),
+    others: (state.contacts.other || []).map(o => resolveContact(o)).filter(Boolean),
+    creator: resolveContact({firstName: state.dmp.creatorFirstName, lastName: state.dmp.creatorLastName, email: state.dmp.creatorEmail}),
+    updater: (state.dmp.updaterFirstName || state.dmp.updaterEmail)
+      ? resolveContact({firstName: state.dmp.updaterFirstName, lastName: state.dmp.updaterLastName, email: state.dmp.updaterEmail})
+      : null
+  };
+  const rp = resolveRegionProgramContacts();
+  resolved.regionContact = rp.regionContact;
+  resolved.programContacts = rp.programContacts;
+
+  const projectUuid = uuidv4();
+  const includedProducts = state.products.filter(p => !p.skipMeta);
+  const productUuids = includedProducts.map(() => uuidv4());
+
+  const projectRecord = buildProjectRecord(resolved, projectUuid, productUuids);
+  const productRecords = includedProducts.map((prod, i) => buildProductRecord(resolved, prod, productUuids[i], projectUuid));
+
+  const skippedForMeta = state.products.filter(p => p.skipMeta).length;
+  if(skippedForMeta > 0){
+    metadataGenWarnings.push(skippedForMeta + ' product(s) marked "do not initiate a new metadata record" were skipped, matching the notebook\'s productSkipMeta behavior.');
+  }
+
+  const contactsOut = [];
+  const seen = {};
+  (CONTACTS_EXPORT || []).forEach(c => {
+    if(referencedContactUuids.has(c.uuid) && !seen[c.uuid]){ seen[c.uuid] = true; contactsOut.push(c.rawRecord); }
+  });
+
+  const finish = (profilesSchemas) => ({
+    _draftNotice: DRAFT_NOTICE_TEXT,
+    generatedAt: new Date().toISOString(),
+    bridgeFieldCount: bridgeRows.length,
+    warnings: metadataGenWarnings,
+    newContactsCreated: newContactRecords.length,
+    project: projectRecord,
+    products: productRecords,
+    contacts: contactsOut,
+    profilesSchemas: (profilesSchemas && profilesSchemas.length) ? profilesSchemas : undefined
+  });
+
+  if(METADATA_GEN_SETTINGS.attachProfilesSchemas){
+    return fetchAllProfilesSchemas().then(finish);
+  }
+  return Promise.resolve(finish([]));
+}
+
+function doExportDraftMetadata(){
+  toast('Generating draft metadata…');
+  buildDraftMetadataBundle().then(bundle => {
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (state.project.title || 'dmp').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    a.href = url;
+    a.download = (safeName || 'dmp') + '_draft_metadata.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    let msg = 'Exported draft metadata: ' + a.download;
+    if(bundle.warnings.length) msg += ' (' + bundle.warnings.length + ' warning(s) — see the file)';
+    toast(msg);
+  }).catch(err => {
+    console.error(err);
+    alert('Could not generate draft metadata.\n\n' + err.message);
+  });
+}
+
+/* =========================================================================
+   DESKTOP-MODE METADATA GENERATION
+   ========================================================================= */
+function doRunMetadataDraftDesktop(){
+  if(!DESKTOP_MODE || !window.pywebview || !window.pywebview.api){
+    toast('This button only works in the desktop app build (see dmp_desktop_app.py).');
+    return;
+  }
+  toast('Running the real bridge scripts…');
+  const profileSchemaUrls = {
+    projectProfile: METADATA_GEN_SETTINGS.projProfileURL, projectSchema: METADATA_GEN_SETTINGS.projSchemaURL,
+    productProfile: METADATA_GEN_SETTINGS.prodProfileURL, productSchema: METADATA_GEN_SETTINGS.prodSchemaURL,
+    dictionaryProfile: METADATA_GEN_SETTINGS.dictProfileURL, dictionarySchema: METADATA_GEN_SETTINGS.dictSchemaURL
+  };
+  window.pywebview.api.run_metadata_draft(JSON.stringify(state), {
+    attachProfilesSchemas: METADATA_GEN_SETTINGS.attachProfilesSchemas,
+    profileSchemaUrls: profileSchemaUrls
+  }).then(result => {
+    if(result && result.error){
+      alert('Metadata generation failed:\n\n' + result.error + (result.trace ? ('\n\n' + result.trace) : ''));
+      return;
+    }
+    const safeName = (state.project.title || 'dmp').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') + '_draft_metadata.json';
+    window.pywebview.api.save_text_file(safeName, JSON.stringify(result, null, 2)).then(path => {
+      if(path){
+        let msg = 'Saved to ' + path;
+        if(result.warnings && result.warnings.length) msg += ' (' + result.warnings.length + ' warning(s) — see the file)';
+        toast(msg);
+      } else {
+        toast('Save cancelled.');
+      }
+    });
+  }).catch(err => {
+    console.error(err);
+    alert('Could not run the metadata draft creator.\n\n' + err.message);
+  });
+}
+
 function loadStateFromObject(obj){
   const fresh = defaultState();
   function merge(target, src){
-    if(Array.isArray(target)) return; // arrays handled by caller
+    if(Array.isArray(target)) return;
     for(const k in target){
       if(src && Object.prototype.hasOwnProperty.call(src, k)){
         if(Array.isArray(target[k])){
@@ -1335,11 +2798,14 @@ function tryRestoreDraft(){
    INIT
    ========================================================================= */
 function boot(){
+  tryRestoreRepoOptions();
+  tryRestoreMetadataGen();
   const restored = tryRestoreDraft();
   renderNav();
   renderAllPanels();
   refreshTopbar();
   if(restored) toast('Restored your last saved draft.');
+  tryFetchRepoOptionsCSV();
 
   document.getElementById('btn-export').addEventListener('click', doExport);
 

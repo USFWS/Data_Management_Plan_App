@@ -25,6 +25,13 @@ cells):
 `dmpvers` -> the DMP template version string (kept for compatibility with
              the productSkipMeta / productExists branch later in the
              notebook).
+
+CHANGELOG
+---------
+- Added `projectPurpose` field (maps to DMP_Interface.html's Project
+  Details -> Purpose box, and to mdJSON metadata.resourceInfo.purpose).
+  New, optional field -- older dmp_data.json exports without a "purpose"
+  key simply yield an empty string here, same as any other optional field.
 """
 
 import json
@@ -154,6 +161,7 @@ def build_dataframe(json_path, dmp_version_default="1.3"):
     rows.append(("projectEndDate", _s(p.get("endDate"))))
     rows.append(("projectOngoing", _b(p.get("ongoing"))))
     rows.append(("projectAbstract", _s(p.get("abstract"))))
+    rows.append(("projectPurpose", _s(p.get("purpose"))))  # NEW -- maps to mdJSON resourceInfo.purpose
     rows.append(("projectKeywords", _s(p.get("keywords"))))
     rows.append(("projectUIDList", _s(p.get("uidList"))))
     rows.append(("projectSpatialDesc", _s(p.get("spatialDesc"))))
@@ -345,3 +353,4 @@ if __name__ == "__main__":
     print(f"dmp = {out_dmp!r}")
     print(f"dmpvers = {out_ver!r}")
     print(out_df)
+
