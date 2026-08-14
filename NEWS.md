@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file. The format 
 >-   *Mention whether you follow Semantic Versioning.*
 -->
 
-# Data_Management_Plan_App 0.1.0
+# Data_Management_Plan_App 0.1.1
 
 Browser application that assists FWS staff to create a Data Management Plan that 
 - meets FWS policy
