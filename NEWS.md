@@ -21,9 +21,11 @@ Browser application that assists FWS staff to create a Data Management Plan that
 - includes the 2026 records schedule update
 - feeds into the National DMP SharePoint list
 
-## Added
+-  Please email tamatha_patterson@fws.gov and calyen_cummings@fws.gov with suggestions for added features
 
--   Please email tamatha_patterson@fws.gov and calyen_cummings@fws.gov with suggestions for added features
+## Added
+ - Settings configuration where url to profiles and schemas, contacts, repository options, and corporate master table options, and pipeline paths
+
 
 ## Changed
 
