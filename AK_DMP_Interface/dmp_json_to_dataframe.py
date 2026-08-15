@@ -353,4 +353,3 @@ if __name__ == "__main__":
     print(f"dmp = {out_dmp!r}")
     print(f"dmpvers = {out_ver!r}")
     print(out_df)
-

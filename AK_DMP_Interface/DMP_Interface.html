@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -342,10 +342,7 @@ body.printing-dmp-doc #print-doc{display:block;}
    Shape matches dmp_json_to_dataframe.py exactly -- do not rename keys
    without updating that file too.
    NOTE: 'purpose' (added under project) maps to mdJSON
-   metadata.resourceInfo.purpose. It is a NEW field not yet present in
-   dmp_json_to_dataframe.py -- add a `rows.push(['projectPurpose', ...])`
-   line there (and to dmp_desktop_app.py's project record builder) to keep
-   the Python side in sync with this interface.
+   metadata.resourceInfo.purpose.
    ========================================================================= */
 const STORAGE_KEY = 'ak_dmp_interface_draft_v1';
 
@@ -401,35 +398,16 @@ let state = defaultState();
 
 /* =========================================================================
    OPTION LISTS  (copied verbatim from AK_DMP_Template_v1_3.docx content controls)
+   FWS Region and FWS Program are hardcoded static lists -- they are NOT
+   loaded from any CSV. (Cost Center is the one dropdown driven by an
+   external file -- see the "COST CENTER FILTERING" section below.)
    ========================================================================= */
 const OPT_REGION = ["1 – Pacific Region","2 – Southwest Region","3 – Midwest Region","4 – Southeast Region",
-  "5 – Northeast Region","6 – Mountain-Prairie Region","7 – Alaska Region","8 – Pacific Southwest Region"];
+  "5 – Northeast Region","6 – Mountain-Prairie Region","7 – Alaska Region","8 – Pacific Southwest Region",
+  "HQ – Headquarters"];
 
 const OPT_PROGRAM = ["Ecological Services","Fish and Aquatic Conservation","Migratory Birds",
   "National Wildlife Refuge System","Office of Subsistence Management","Science Applications"];
-
-const OPT_COST_CENTER = [
-"FES AK: Assistant Regional Director (FF07C00000)","FES AK: Anchorage Fish and Wildlife Field Office (FF07CAAN00)",
-"FES AK: Conservation Genetics Laboratory (FF07CACG00)","FES AK: Fairbanks Fish and Wildlife Field Office (FF07CAFB00)",
-"FES AK: Juneau Fish and Wildlife Field Office (FF07CAJN00)","FES AK: Kenai Fish and Wildlife Field Office (FF07CAKN00)",
-"FES AK: Marine Mammals Management Office (FF07CAMM00)",
-"MB AK: Assistant Regional Director-Climate Change & Science Applications (FF07S00000)",
-"MB AK: Division of Migratory Birds (FF07M04000)","MB AK: Eagle Raptor Management Program (FF07M14100)",
-"MB AK: International Affairs (FF07D0IA00)","MB AK: Land Bird Program (FF07M14500)","MB AK: Outreach (FF07M14800)",
-"MB AK: Quantitative Ecology (FF07M14600)","MB AK: Sea Duck Joint Venture (FF07M14900)","MB AK: Seabirds Program (FF07M14400)",
-"MB AK: Shorebird Program (FF07M14200)","MB AK: Waterfowl Program (FF07M14300)","Arctic NWR (FF07RARC00)",
-"Alaska Maritime NWR (FF07RAM000)","Alaska Peninsula/Becharof NWR (FF07RAP000)","Alaska Peninsula NWR (FF07RAPN00)",
-"Becharof NWR (FF07RAPB00)","Innoko NWR (FF07RINN00)","Izembek NWR (FF07RIZM00)","Kanuti NWR (FF07RKAN00)",
-"Kenai NWR (FF07RKNA00)","Kodiak NWR (FF07RKDK00)","Koyukuk/Nowitna NWR (FF07RKU000)","Koyukuk NWR (FF07RKUK00)",
-"Nowitna NWR (FF07RKUN00)","Selawik NWR (FF07RSWK00)","Tetlin NWR (FF07RTET00)","Togiak NWR (FF07RTGK00)",
-"Yukon Delta NWR (FF07RYKD00)","Yukon Flats NWR (FF07RYKF00)","NWRS AK: Conservation Planning and Policy Branch (FF07R06000)",
-"NWRS AK: Division of Budget and Facilities Management (FF07R04000)","NWRS AK: Division of Natural Resources (FF07R02000)",
-"NWRS AK: Division of Fire Management (FF07R03000)","NWRS AK: Division of Visitor Services (FF07R08000)",
-"NWRS AK: Inventory and Monitoring Branch (FF07R02M00)","NWRS AK: Office of Refuge Law Enforcement (FF07R09000)",
-"NWRS AK: Pacific States Engineering Group (FF01G08900)","NWRS AK: Division of Realty (FF07R05000)",
-"NWRS AK: Regional Office (FF07R00000)","NWRS AK: Water Resources Branch (FF07R02W00)",
-"OSM: Assistant Regional Director-Subsistence Management (FF07J00000)"
-];
 
 const OPT_META_OTHER = ["Not Applicable","CSDGM (FGDC)","Dublin Core","ISO 19115-1","ISO 19115-2","ISO 19115-3",
   "POD (Project Open Data) / DCAT 2014"];
@@ -604,7 +582,7 @@ function bridgeBuildRows(data){
   rows.push(['projectEndDate', _s(p.endDate)]);
   rows.push(['projectOngoing', _b(p.ongoing)]);
   rows.push(['projectAbstract', _s(p.abstract)]);
-  rows.push(['projectPurpose', _s(p.purpose)]); // NEW -- maps to mdJSON resourceInfo.purpose
+  rows.push(['projectPurpose', _s(p.purpose)]); // maps to mdJSON resourceInfo.purpose
   rows.push(['projectKeywords', _s(p.keywords)]);
   rows.push(['projectUIDList', _s(p.uidList)]);
   rows.push(['projectSpatialDesc', _s(p.spatialDesc)]);
@@ -786,8 +764,150 @@ const METADATA_GEN_SETTINGS = {
   tmpDir: '',
   dmpSpreadsheet: '',
   regionProgramContactsPath: '',
-  contactsExportPath: ''
+  contactsExportPath: '',
+  // Cost Center filtering source file (Project Details -- see the "COST
+  // CENTER FILTERING" section below). FWS Region and FWS Program contact
+  // resolution use hardcoded lookup tables instead (REGION_CONTACT_ID /
+  // PROGRAM_CONTACT_ID below) -- CMT.csv is the only file kept loadable
+  // here, since it's large (1800+ rows) and organization-specific in a way
+  // the Region/Program tables are not.
+  cmtCsvURL: ''
 };
+
+/* =========================================================================
+   COST CENTER FILTERING -- CMT.csv (cost center directory), loadable on the
+   Setup tab. When loaded, the Cost Center dropdown on Project Details is
+   filtered to rows whose Region matches the selected FWS Region (and,
+   once PROGRAM_CMT_CODE below is populated with real data, further
+   narrowed by the CMT_CCCode5 letter for the selected FWS Program(s)).
+   There is NO built-in/default Cost Center list -- the dropdown is empty
+   until CMT.csv is loaded.
+   ========================================================================= */
+let CMT_DATA = null;              // array of {CCCode, CMT_CCCode5, Region, OrgName, Program, Active}
+let CMT_DATA_SOURCE = 'Not loaded';
+
+// FWS Program -> CMT_CCCode5 letter, DERIVED automatically from CMT.csv's
+// own Program and CMT_CCCode5 columns when it's loaded (see
+// deriveProgramCodeMap() below) -- not hardcoded, and not user-supplied.
+// PROGRAM_CMT_CODE_OVERRIDE lets a specific mapping be forced manually if
+// the derived one is ever wrong (e.g. CMT.csv's Program text is ambiguous
+// for a given FWS Program); leave an entry commented out to use the
+// derived value instead.
+const PROGRAM_CMT_CODE_OVERRIDE = {
+  // "Ecological Services": "C",
+};
+let PROGRAM_CMT_CODE_DERIVED = {};   // filled in by deriveProgramCodeMap()
+let PROGRAM_CMT_CODE_DEBUG = [];     // [{program, letter, count, totalRowsMatched}] for display on Setup
+
+function _normForMatch(s){ return String(s||'').trim().toLowerCase(); }
+
+// Scans CMT_DATA, matching each row's Program text against each FWS Program
+// dropdown string (OPT_PROGRAM) via exact -> case-insensitive -> substring
+// (either direction) matching, tallies which CMT_CCCode5 letter occurs most
+// often for each FWS Program, and stores the winning letter per program.
+// Re-run whenever CMT_DATA changes (load/clear/restore).
+function deriveProgramCodeMap(){
+  PROGRAM_CMT_CODE_DERIVED = {};
+  PROGRAM_CMT_CODE_DEBUG = [];
+  if(!CMT_DATA || CMT_DATA.length === 0) return;
+
+  const tallies = {}; // { fwsProgram: { letter: count } }
+  OPT_PROGRAM.forEach(p => { tallies[p] = {}; });
+
+  CMT_DATA.forEach(row => {
+    const rowProgram = _normForMatch(row.Program);
+    const letter = (row.CMT_CCCode5 || row.CCCode.charAt(4) || '').trim();
+    if(!rowProgram || !letter) return;
+    OPT_PROGRAM.forEach(p => {
+      const pNorm = _normForMatch(p);
+      const isMatch = rowProgram === pNorm || rowProgram.includes(pNorm) || pNorm.includes(rowProgram);
+      if(isMatch){
+        tallies[p][letter] = (tallies[p][letter] || 0) + 1;
+      }
+    });
+  });
+
+  OPT_PROGRAM.forEach(p => {
+    const counts = tallies[p];
+    const letters = Object.keys(counts);
+    if(letters.length === 0) return;
+    let bestLetter = letters[0], bestCount = counts[letters[0]];
+    letters.forEach(l => { if(counts[l] > bestCount){ bestLetter = l; bestCount = counts[l]; } });
+    const total = letters.reduce((sum, l) => sum + counts[l], 0);
+    PROGRAM_CMT_CODE_DERIVED[p] = bestLetter;
+    PROGRAM_CMT_CODE_DEBUG.push({program: p, letter: bestLetter, count: bestCount, totalRowsMatched: total});
+  });
+}
+
+function programCmtCode(programLabel){
+  if(PROGRAM_CMT_CODE_OVERRIDE[programLabel]) return PROGRAM_CMT_CODE_OVERRIDE[programLabel];
+  return PROGRAM_CMT_CODE_DERIVED[programLabel] || null;
+}
+
+function csvRowsToObjects(text){
+  const rows = parseCSV(text);
+  if(rows.length === 0) return [];
+  const headers = rows[0].map(hd => (hd || '').trim());
+  return rows.slice(1)
+    .filter(r => r.some(cell => (cell || '').trim() !== ''))
+    .map(row => {
+      const obj = {};
+      headers.forEach((hd, i) => { obj[hd] = (row[i] !== undefined ? String(row[i]).trim() : ''); });
+      return obj;
+    });
+}
+
+function _csvIsExplicitlyInactive(val){
+  const v = String(val == null ? '' : val).trim().toLowerCase();
+  return v === 'false' || v === '0' || v === 'no' || v === 'n';
+}
+
+// Maps each FWS Region dropdown label to the numeric Region value used in
+// CMT.csv's Region column. Regions 1-8 happen to start with their own
+// number (so the regex fallback below would work for them too), but
+// Headquarters does not -- it's Region 9 in CMT.csv despite the "HQ"
+// label, so it needs an explicit entry here rather than relying on regex
+// extraction from the label text.
+const REGION_NUMBER_MAP = {
+  "1 – Pacific Region": 1, "2 – Southwest Region": 2, "3 – Midwest Region": 3,
+  "4 – Southeast Region": 4, "5 – Northeast Region": 5, "6 – Mountain-Prairie Region": 6,
+  "7 – Alaska Region": 7, "8 – Pacific Southwest Region": 8, "HQ – Headquarters": 9
+};
+function regionNumberFromLabel(regionLabel){
+  if(!regionLabel) return null;
+  if(regionLabel in REGION_NUMBER_MAP) return REGION_NUMBER_MAP[regionLabel];
+  const m = String(regionLabel).match(/^(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+// Returns an array of "OrgName (CCCode)" strings. Always an array (never
+// null) -- there is no fallback to a built-in list. Empty until CMT.csv is
+// loaded and an FWS Region is selected.
+function computeCostCenterOptions(){
+  if(!CMT_DATA) return [];
+  const regionNum = regionNumberFromLabel(state.project.region);
+  if(regionNum === null) return [];
+
+  const letters = new Set(
+    (state.project.programs || []).map(pv => programCmtCode(pv)).filter(Boolean)
+  );
+  const filterByProgram = letters.size > 0; // false until CMT.csv yields a derived (or overridden) letter for at least one selected program
+
+  const seen = new Set();
+  const options = [];
+  CMT_DATA.forEach(row => {
+    if(_csvIsExplicitlyInactive(row.Active)) return;
+    const rowRegion = parseInt(row.Region, 10);
+    const code = row.CCCode || '';
+    const code5 = (row.CMT_CCCode5 || code.charAt(4) || '').trim();
+    if(rowRegion !== regionNum) return;
+    if(filterByProgram && !letters.has(code5)) return;
+    const label = (row.OrgName || code) + ' (' + code + ')';
+    if(!seen.has(label)){ seen.add(label); options.push(label); }
+  });
+  options.sort();
+  return options;
+}
 
 /* =========================================================================
    DESKTOP MODE (pywebview) DETECTION
@@ -849,7 +969,9 @@ function buildNotebookSettingsSnippet(){
     "region_program_contacts_path = r'" + esc(g.regionProgramContactsPath) + "'",
     "contact_folder = r'" + esc(g.contactFolder) + "'",
     "tmp_dir = r'" + esc(g.tmpDir) + "'",
-    "dmp_spreadsheet = r'" + esc(g.dmpSpreadsheet) + "'"
+    "dmp_spreadsheet = r'" + esc(g.dmpSpreadsheet) + "'",
+    "# FWS Region/Program contact IDs are hardcoded in region_program_contacts.py",
+    "# (REGION_CONTACT_ID / PROGRAM_CONTACT_ID) -- no separate CSV path needed."
   ].join('\n');
 }
 
@@ -879,7 +1001,9 @@ function saveMetadataGenToStorage(){
       contactsExport: CONTACTS_EXPORT ? CONTACTS_EXPORT.map(c => c.rawRecord) : null,
       contactsExportSource: CONTACTS_EXPORT_SOURCE,
       regionProgramExport: REGION_PROGRAM_EXPORT ? REGION_PROGRAM_EXPORT.map(c => c.rawRecord) : null,
-      regionProgramExportSource: REGION_PROGRAM_EXPORT_SOURCE
+      regionProgramExportSource: REGION_PROGRAM_EXPORT_SOURCE,
+      cmtData: CMT_DATA,
+      cmtDataSource: CMT_DATA_SOURCE
     }));
   }catch(e){ /* non-fatal, e.g. quota exceeded on a very large contacts file */ }
 }
@@ -898,9 +1022,17 @@ function tryRestoreMetadataGen(){
       REGION_PROGRAM_EXPORT = parseContactsExportJSON({data: saved.regionProgramExport});
       REGION_PROGRAM_EXPORT_SOURCE = saved.regionProgramExportSource || 'Restored from last session';
     }
+    if(Array.isArray(saved.cmtData) && saved.cmtData.length){
+      CMT_DATA = saved.cmtData;
+      CMT_DATA_SOURCE = saved.cmtDataSource || 'Restored from last session';
+      deriveProgramCodeMap();
+    }
   }catch(e){ /* fall back to nothing loaded */ }
 }
 
+// Generic "load this from a URL or from disk" widget, used for the contacts
+// export, region/program export, and CMT.csv loaders. Pass opts.accept to
+// control the file-picker filter (defaults to JSON).
 let metagenLoaderCounter = 0;
 function buildFileUrlLoader(opts){
   metagenLoaderCounter++;
@@ -922,7 +1054,7 @@ function buildFileUrlLoader(opts){
       .catch(err => toast('Could not fetch that URL (' + err.message + '). Try "Browse file…" instead.'));
   }}, ['Fetch from URL']);
 
-  const fileInput = h('input', {type:'file', accept:'.json,application/json', id:inputId, style:'display:none;'});
+  const fileInput = h('input', {type:'file', accept: opts.accept || '.json,application/json', id:inputId, style:'display:none;'});
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if(!file) return;
@@ -948,8 +1080,38 @@ function buildFileUrlLoader(opts){
 }
 
 /* =========================================================================
-   REGION / PROGRAM CONTACT RESOLUTION -- ported from region_program_contacts.py
+   REGION / PROGRAM CONTACT RESOLUTION
+   Hardcoded mdEditor contact IDs for each FWS Region / Program, sourced
+   from the actual FWSRegion_Program_Contacts_mdeditor-*.json export you
+   provided (cross-referenced each organization's real contactId against
+   its name). Preferred over name-matching -- doesn't depend on an
+   organization's "name" field staying in sync with these tables. If your
+   organization's mdEditor contact IDs for these orgs ever change (e.g. a
+   record gets recreated), update the values below to match.
    ========================================================================= */
+const REGION_CONTACT_ID = {
+  "1 – Pacific Region": "95aa955c-140b-4744-ae07-138ff8d5a220",
+  "2 – Southwest Region": "ae95f439-0914-4528-8bd6-f948c3c01a38",
+  "3 – Midwest Region": "fe83831d-b35d-4023-95fb-ca91aecb01cf",
+  "4 – Southeast Region": "42f6e946-635d-4a6a-b317-d011f6cf04a2",
+  "5 – Northeast Region": "e3efce92-4061-4ac5-b45b-33d98eabc69a",
+  "6 – Mountain-Prairie Region": "cabb6cef-48ef-42bc-94db-815ae0d8392c",
+  "7 – Alaska Region": "821858df-5d0e-445a-b027-014f5ef68782",
+  "8 – Pacific Southwest Region": "7d8f22bd-a9c0-4333-9b7a-dc0b310a85c1",
+  "HQ – Headquarters": "a92632e3-caf2-4a13-8840-2dd35e4d92cc"
+};
+const PROGRAM_CONTACT_ID = {
+  "Ecological Services": "b74f0135-d04b-4989-aac1-3f4f38661436",
+  "Fish and Aquatic Conservation": "f899557c-d2f3-4257-8f56-4bcd7b0d12d2",
+  "Migratory Birds": "5a8ffdde-358e-4276-9289-596b7f23c22d",
+  "National Wildlife Refuge System": "9aa1b724-b0a6-4f65-9290-fa680127bd72",
+  "Office of Subsistence Management": "a0d6a50b-b5e1-42dd-8bc5-fd4a29f84f21",
+  "Science Applications": "51a0a513-4930-48ab-9f8b-ec4ab8d47a7f"
+};
+
+// Name-based fallback, used only if a region/program's hardcoded ID above
+// isn't found in the loaded Region/Program contacts export (e.g. the
+// export is older or from a different mdEditor instance).
 const REGION_CONTACT_NAME = {
   "1 – Pacific Region": "U.S. Fish and Wildlife Service, Pacific Region",
   "2 – Southwest Region": "U.S. Fish and Wildlife Service, Southwest Region",
@@ -958,7 +1120,8 @@ const REGION_CONTACT_NAME = {
   "5 – Northeast Region": "U.S Fish and Wildlife Service, Northeast Region", // sic
   "6 – Mountain-Prairie Region": "U.S. Fish and Wildlife Service, Mountain Prairie Region",
   "7 – Alaska Region": "U.S. Fish and Wildlife Service, Alaska Region",
-  "8 – Pacific Southwest Region": "U.S. Fish and Wildlife Service, Pacific Southwest Region"
+  "8 – Pacific Southwest Region": "U.S. Fish and Wildlife Service, Pacific Southwest Region",
+  "HQ – Headquarters": "U.S. Fish and Wildlife Service, Headquarters"
 };
 const PROGRAM_CONTACT_NAME = {
   "Ecological Services": "Ecological Services",
@@ -974,25 +1137,44 @@ function findContactByName(list, name){
   return list.find(c => c.name === name) || null;
 }
 
+function findContactByUuid(list, uuid){
+  if(!list || !uuid) return null;
+  return list.find(c => c.uuid === uuid) || null;
+}
+
 function resolveRegionProgramContacts(){
   let regionContact = null;
   const programContacts = [];
 
   const regionValue = state.project.region;
   if(regionValue){
-    const contactName = REGION_CONTACT_NAME[regionValue];
-    const rec = contactName ? findContactByName(REGION_PROGRAM_EXPORT, contactName) : null;
+    let rec = null;
+    const idFromTable = REGION_CONTACT_ID[regionValue];
+    if(idFromTable){
+      rec = findContactByUuid(REGION_PROGRAM_EXPORT, idFromTable) || {uuid: idFromTable, name: null};
+    }
+    if(!rec){
+      const contactName = REGION_CONTACT_NAME[regionValue];
+      rec = contactName ? findContactByName(REGION_PROGRAM_EXPORT, contactName) : null;
+    }
     if(rec){
       regionContact = rec;
       referencedContactUuids.add(rec.uuid);
     } else {
-      metadataGenWarnings.push('No contact match found for FWS Region "' + regionValue + '" -- it will not be added as a contact. (Load the Region/Program contacts file, or check REGION_CONTACT_NAME in region_program_contacts.py.)');
+      metadataGenWarnings.push('No contact match found for FWS Region "' + regionValue + '" -- it will not be added as a contact.');
     }
   }
   (state.project.programs || []).forEach(pv => {
     if(!pv) return;
-    const contactName = PROGRAM_CONTACT_NAME[pv];
-    const rec = contactName ? findContactByName(REGION_PROGRAM_EXPORT, contactName) : null;
+    let rec = null;
+    const idFromTable = PROGRAM_CONTACT_ID[pv];
+    if(idFromTable){
+      rec = findContactByUuid(REGION_PROGRAM_EXPORT, idFromTable) || {uuid: idFromTable, name: null};
+    }
+    if(!rec){
+      const contactName = PROGRAM_CONTACT_NAME[pv];
+      rec = contactName ? findContactByName(REGION_PROGRAM_EXPORT, contactName) : null;
+    }
     if(rec){
       programContacts.push(rec);
       referencedContactUuids.add(rec.uuid);
@@ -1185,6 +1367,9 @@ function grid(cols, children){
 
 /* =========================================================================
    REPEATABLE LIST HELPER
+   `opts.onListChange`, if provided, fires after an item is added or
+   removed. Used so Project Details can recompute the Cost Center dropdown
+   whenever a Program is added/removed.
    ========================================================================= */
 function renderRepeatable(container, array, opts){
   container.innerHTML = '';
@@ -1198,6 +1383,7 @@ function renderRepeatable(container, array, opts){
       h('span', {class:'rep-item-title'}, [opts.itemLabel(item, idx)]),
       (array.length > (opts.minItems||0)) ? h('button', {type:'button', class:'rep-remove', onclick:() => {
         array.splice(idx,1); onDirty(); renderRepeatable(container, array, opts);
+        if(opts.onListChange) opts.onListChange();
       }}, ['Remove']) : null
     ]);
     const wrap = h('div', {class:'rep-item'}, [head, itemBody]);
@@ -1208,16 +1394,13 @@ function renderRepeatable(container, array, opts){
     array.push(opts.makeNew());
     onDirty();
     renderRepeatable(container, array, opts);
+    if(opts.onListChange) opts.onListChange();
   }}, [opts.addLabel || '+ Add another']);
   container.appendChild(addBtn);
 }
 
 /* =========================================================================
    SECTION DEFINITIONS
-   'Distribution & Records' is now two separate tabs: 'distribution'
-   (Regional Data Repository + public repositories) and 'records'
-   (Records Schedule & Disposition). Every numbered section after it shifts
-   up by one (Data Products is now Section 8, etc.).
    ========================================================================= */
 const SECTIONS = [
   {id:'dmp', label:'DMP Information', build:buildDmpPanel},
@@ -1225,7 +1408,7 @@ const SECTIONS = [
   {id:'contacts', label:'Personnel & Contacts', build:buildContactsPanel},
   {id:'metadata', label:'Metadata & Data Standards', build:buildMetadataPanel},
   {id:'storage', label:'Storage, Backup & Review', build:buildStoragePanel},
-  {id:'distribution', label:'Distribution', build:buildDistributionPanel},
+  {id:'distribution', label:'Preservation & Distribution', build:buildDistributionPanel},
   {id:'records', label:'Records Schedule', build:buildRecordsPanel},
   {id:'products', label:'Data Products', build:buildProductsPanel},
   {id:'source', label:'Source Data', build:buildSourceDataPanel},
@@ -1307,38 +1490,68 @@ function buildProjectPanel(idx){
 
   const progContainer = h('div');
   const ccContainer = h('div');
+  const ccNoteContainer = h('div');
+
+  function renderCostCenterNote(){
+    ccNoteContainer.innerHTML = '';
+    const loaded = !!CMT_DATA;
+    const programFilterActive = loaded && (state.project.programs || []).some(pv => programCmtCode(pv));
+    ccNoteContainer.appendChild(h('div', {class:'note'}, [
+      loaded
+        ? ('Cost Center options below are filtered to the FWS Region selected above' + (programFilterActive ? ', narrowed by FWS Program using a mapping derived automatically from ' : ' using ') )
+        : 'Load ',
+      h('code',{},['CMT.csv']),
+      loaded ? ' loaded on the ' : ' on the ',
+      h('a', {href:'#', onclick:(e)=>{ e.preventDefault(); showSection('setup'); }}, ['Setup']),
+      loaded ? ' tab.' : ' tab. There is no built-in Cost Center list — this dropdown stays empty until CMT.csv is loaded.',
+      ' Currently: ', h('strong',{},[CMT_DATA ? (CMT_DATA.length + ' cost centers loaded') : 'CMT.csv not loaded']), '.'
+    ]));
+  }
+  renderCostCenterNote();
+
+  function renderCostCenterContainer(){
+    const options = computeCostCenterOptions();
+    const placeholder = !CMT_DATA
+      ? 'Load CMT.csv on the Setup tab first'
+      : (options.length ? 'Select a cost center...' : 'Select an FWS Region above first');
+    renderRepeatable(ccContainer, proj.costCenters, {
+      itemLabel:(v,i)=>'Cost center '+(i+1), emptyText:'No cost center added yet.', addLabel:'+ Add a cost center',
+      makeNew:()=>'',
+      renderItem:(v,i)=> {
+        const sel = selectInput({get val(){return proj.costCenters[i];}, set val(x){proj.costCenters[i]=x;}}, 'val', options, {placeholder: placeholder});
+        return h('div', {}, [sel]);
+      }
+    });
+  }
+  function refreshCostCenterOptions(){
+    renderCostCenterNote();
+    renderCostCenterContainer();
+  }
 
   p.appendChild(card('Program & Cost Center', 'Add more than one if the project spans multiple programs or cost centers.', [
     h('div', {class:'subsection-label'}, ['FWS Region *']),
-    h('div', {style:'margin-bottom:4px;'}, [selectInput(proj,'region',OPT_REGION,{placeholder:'Select a region...'})]),
+    h('div', {style:'margin-bottom:4px;'}, [selectInput(proj,'region',OPT_REGION,{placeholder:'Select a region...', onChange: refreshCostCenterOptions})]),
     h('div', {class:'subsection-label'}, ['FWS Program *']),
     progContainer,
     h('div', {class:'subsection-label'}, ['Cost Center *']),
+    ccNoteContainer,
     ccContainer,
   ]));
   renderRepeatable(progContainer, proj.programs, {
     itemLabel:(v,i)=>'Program '+(i+1), emptyText:'No program added yet.', addLabel:'+ Add a program',
     makeNew:()=>'',
+    onListChange: refreshCostCenterOptions,
     renderItem:(v,i)=> {
-      const sel = selectInput({get val(){return proj.programs[i];}, set val(x){proj.programs[i]=x;}}, 'val', OPT_PROGRAM, {placeholder:'Click here to select a program.'});
+      const sel = selectInput({get val(){return proj.programs[i];}, set val(x){proj.programs[i]=x;}}, 'val', OPT_PROGRAM, {placeholder:'Click here to select a program.', onChange: refreshCostCenterOptions});
       return h('div', {}, [sel]);
     }
   });
-  renderRepeatable(ccContainer, proj.costCenters, {
-    itemLabel:(v,i)=>'Cost center '+(i+1), emptyText:'No cost center added yet.', addLabel:'+ Add a cost center',
-    makeNew:()=>'',
-    renderItem:(v,i)=> {
-      const sel = selectInput({get val(){return proj.costCenters[i];}, set val(x){proj.costCenters[i]=x;}}, 'val', OPT_COST_CENTER, {placeholder:'Click here to select a cost center.'});
-      return h('div', {}, [sel]);
-    }
-  });
+  renderCostCenterContainer();
 
-  /* ---- Project Title (own box) ---- */
   p.appendChild(card('Project Title', null, [
     fieldWrap('Project title', true, 'A title should convey meaningful information, such as focal species, season, method, purpose, spatial extent, and/or temporal extent.', textareaInput(proj,'title',{rows:2})),
   ]));
 
-  /* ---- Timeline (own box, separate from Title) ---- */
   const endDateWrap = h('div', {id:'end-date-wrap'});
   const buildEndDate = () => {
     endDateWrap.innerHTML = '';
@@ -1362,17 +1575,14 @@ function buildProjectPanel(idx){
     fieldWrap('Project abstract', true, 'Consider copying and pasting this from the project proposal or investigation plan.', textareaInput(proj,'abstract',{rows:5}))
   ]));
 
-  /* ---- Purpose (NEW, optional -- maps to mdJSON resourceInfo.purpose) ---- */
   p.appendChild(card('Purpose', 'Optional. A brief statement of why the project or its data are being collected — distinct from the Abstract, which summarizes what the project is. Maps to the mdJSON metadata.resourceInfo.purpose field.', [
     fieldWrap('Project purpose', false, 'e.g. "To inform harvest management decisions for Pacific walrus by documenting current haulout use."', textareaInput(proj,'purpose',{rows:3}))
   ]));
 
-  /* ---- Keywords (own box) ---- */
   p.appendChild(card('Keywords', null, [
     fieldWrap('Keywords', false, 'Comma-separated, e.g. "walrus, haulout, Bering Sea"', textInput(proj,'keywords'))
   ]));
 
-  /* ---- Identifiers (own box, separate from Keywords) ---- */
   p.appendChild(card('Identifiers', null, [
     fieldWrap('Project identifier code / tracking number', false, 'If this is a Refuge project, list the PRIMR ID (required). If your project does not already have a tracking code, one will be generated by your data manager.', textInput(proj,'uidList'))
   ]));
@@ -1565,7 +1775,7 @@ function buildStoragePanel(idx){
   return p;
 }
 
-/* ---------- 6. Distribution (Regional Data Repository + public repositories) ---------- */
+/* ---------- 6. Preservation & Distribution ---------- */
 let repoFileInputCounter = 0;
 function renderRepoOptionsPanel(container){
   container.innerHTML = '';
@@ -1612,21 +1822,21 @@ function renderRepoOptionsPanel(container){
 function buildDistributionPanel(idx){
   const d = state.distribution;
   const p = h('div', {class:'panel', id:'panel-distribution'});
-  p.appendChild(panelHead('Section 6', 'Distribution',
+  p.appendChild(panelHead('Section 6', 'Preservation & Distribution',
     'Regional Data Repository and public data sharing repositories for this project. See the Records Schedule tab for records disposition.'));
 
   const rdrUrlWrap = h('div', {id:'rdr-url-wrap'});
   const buildRdrUrl = () => {
     rdrUrlWrap.innerHTML = '';
-    rdrUrlWrap.appendChild(fieldWrap('RDR folder URL', false, 'To be completed by your Data Manager if no folder exists yet.', textInput(d,'rdrURL')));
+    rdrUrlWrap.appendChild(fieldWrap('RDR folder URL', false, 'Enter URL to an internal preservation repository', textInput(d,'rdrURL')));
     if(!d.rdrURL){
       rdrUrlWrap.appendChild(fieldWrap('Project short title', false, 'If a folder in the RDR does not currently exist, provide a 3- or 4-word shortened project title; your program data manager will work with you to create an RDR code.', textInput(d,'shortTitle')));
     }
   };
   buildRdrUrl();
 
-  p.appendChild(card('Regional Data Repository', 'Long-term authoritative preservation of this project and its products will follow the Alaska Region Interim Data Management Guide, maintaining data assets including metadata in an archive folder in the RDR.', [
-    checkboxRow('Preserve this project in the Regional Data Repository (RDR)', null, d, 'rdrChecked'),
+  p.appendChild(card('Internal Preservation Repository', 'Long-term preservation of this project and its products will follow the Alaska Regional Model, maintaining data assets including metadata in a preservation folder in an internal, read-only repository.', [
+    checkboxRow('Preserve this project in a Regional Data Repository (RDR)', null, d, 'rdrChecked'),
     rdrUrlWrap
   ]));
 
@@ -1652,12 +1862,12 @@ function buildDistributionPanel(idx){
   return p;
 }
 
-/* ---------- 7. Records Schedule (split out of the former "Distribution & Records" tab) ---------- */
+/* ---------- 7. Records Schedule ---------- */
 function buildRecordsPanel(idx){
   const d = state.distribution;
   const p = h('div', {class:'panel', id:'panel-records'});
   p.appendChild(panelHead('Section 7', 'Records Schedule & Disposition',
-    'Records disposition schedules applicable to this project\u2019s data and products. See the Distribution tab for the Regional Data Repository and public repositories.'));
+    'Records disposition schedules applicable to this project\u2019s data and products. See the Preservation & Distribution tab for the Regional Data Repository and public repositories.'));
 
   const recContainer = h('div');
   p.appendChild(card('Records Schedule and Disposition', 'Your data manager or Regional Records Manager can assist in determining the applicable records schedule(s) and disposition(s). You may also type a schedule name if it is not found in the list.', [recContainer]));
@@ -1905,9 +2115,9 @@ function buildReviewPanel(idx){
   const metaGenNote = h('div', {class:'card'});
   metaGenNote.appendChild(h('h3',{},['Metadata Generation Inputs']));
   metaGenNote.appendChild(h('p', {class:'card-desc'}, [
-    'Contacts export, Region/Program contacts, profile/schema URLs, and Python pipeline paths are configured on the ',
+    'Contacts export, Region/Program contacts, profile/schema URLs, Cost Center filtering (CMT.csv), and Python pipeline paths are configured on the ',
     h('a', {href:'#', onclick:(e)=>{ e.preventDefault(); showSection('setup'); }}, ['Setup']),
-    ' tab. Currently loaded: ',
+    ' tab. FWS Region and Program contact resolution uses hardcoded IDs (see REGION_CONTACT_ID / PROGRAM_CONTACT_ID in the script) and does not require a separate file. Currently loaded: ',
     h('strong',{},[CONTACTS_EXPORT ? (CONTACTS_EXPORT.length + ' contact' + (CONTACTS_EXPORT.length===1?'':'s')) : 'no contacts export']),
     ', ',
     h('strong',{},[REGION_PROGRAM_EXPORT ? (REGION_PROGRAM_EXPORT.length + ' org contact' + (REGION_PROGRAM_EXPORT.length===1?'':'s')) : 'no Region/Program contacts']),
@@ -1921,7 +2131,7 @@ function buildReviewPanel(idx){
     h('strong',{},['Export DMP']), ' opens your browser\'s print dialog with a formatted version of this plan (choose "Save as PDF" as the destination). ',
     DESKTOP_MODE
       ? h('span',{},[h('strong',{},['Run metadata draft creator']), ' calls the REAL ', h('code',{},['dmp_json_to_dataframe.py']), ' and ', h('code',{},['region_program_contacts.py']), ' directly (see ', h('code',{},['dmp_desktop_app.py']), ') \u2014 no JavaScript approximation. It resolves contacts against the files configured on the Setup tab, resolves FWS Region/Program admin contacts, and saves the result via a native Save dialog.'])
-      : h('span',{},[h('strong',{},['Export draft metadata']), ' runs a JavaScript port of ', h('code',{},['dmp_json_to_dataframe.py']), '\u2019s field mapping, resolving contacts against the files loaded on the Setup tab and the FWS Region/Program admin contacts the same way ', h('code',{},['region_program_contacts.py']), ' does. It produces real mdJSON content, but not mdEditor\u2019s internal record/profile envelope, so treat it as a thorough draft, not a guaranteed drag-and-drop mdEditor import. (Running the desktop app build instead calls the real Python scripts directly \u2014 see ', h('code',{},['dmp_desktop_app.py']), '.)']),
+      : h('span',{},[h('strong',{},['Export draft metadata']), ' runs a JavaScript port of ', h('code',{},['dmp_json_to_dataframe.py']), '\u2019s field mapping, resolving contacts against the files loaded on the Setup tab and the FWS Region/Program admin contacts using the hardcoded ID tables. It produces real mdJSON content, but not mdEditor\u2019s internal record/profile envelope, so treat it as a thorough draft, not a guaranteed drag-and-drop mdEditor import. (Running the desktop app build instead calls the real Python scripts directly \u2014 see ', h('code',{},['dmp_desktop_app.py']), '.)']),
     ' Either way, hand ', h('code',{},['dmp_data.json']), ' to the DMP_to_metadata notebook for the fully resolved, import-ready file.'
   ]));
   const btnRow = h('div', {style:'display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;'});
@@ -1990,11 +2200,55 @@ function buildSetupPanel(){
   /* ---- Repository dropdown options ---- */
   const repoCard = h('div', {class:'card'});
   repoCard.appendChild(h('h3',{},['Public Repository Dropdown List']));
-  repoCard.appendChild(h('p',{class:'card-desc'},['Controls the options offered in the "Repository" dropdown under Distribution. Loadable from repository_options.csv.']));
+  repoCard.appendChild(h('p',{class:'card-desc'},['Controls the options offered in the "Repository" dropdown under Preservation & Distribution. Loadable from repository_options.csv.']));
   const repoPanel = h('div');
   repoCard.appendChild(repoPanel);
   renderRepoOptionsPanel(repoPanel);
   p.appendChild(repoCard);
+
+  /* ---- Cost Center filtering (CMT.csv only -- FWS Region/Program are hardcoded, see script) ---- */
+  const cmtCard = h('div', {class:'card'});
+  cmtCard.appendChild(h('h3',{},['Cost Center Directory (CMT.csv)']));
+  cmtCard.appendChild(h('p',{class:'card-desc'},['Used to filter the Cost Center dropdown on Project Details by the project\u2019s selected FWS Region and Program(s). Expects columns including CCCode, CMT_CCCode5, Region, OrgName, Program, and Active. The FWS Program \u2192 CMT_CCCode5 letter mapping is derived automatically from this file\u2019s own Program and CMT_CCCode5 columns \u2014 nothing else needs to be loaded or configured for Program-based filtering to work.']));
+  cmtCard.appendChild(buildFileUrlLoader({
+    label: 'CMT.csv',
+    desc: 'Cost center directory export.',
+    urlKey: 'cmtCsvURL',
+    accept: '.csv,text/csv',
+    getStatus: () => CMT_DATA ? (CMT_DATA.length + ' cost center row' + (CMT_DATA.length===1?'':'s') + ' loaded — ' + CMT_DATA_SOURCE) : 'Not loaded — the Cost Center dropdown has no options until this is loaded (there is no built-in list).',
+    onLoadText: (text, sourceLabel) => {
+      const rows = csvRowsToObjects(text);
+      if(rows.length === 0){ toast('No rows found in that CSV.'); return; }
+      if(!('CCCode' in rows[0]) || !('Region' in rows[0])){
+        toast('That file does not look like CMT.csv (expected CCCode and Region columns).');
+        return;
+      }
+      CMT_DATA = rows.map(r => ({CCCode: r.CCCode || '', CMT_CCCode5: r.CMT_CCCode5 || '', Region: r.Region || '', OrgName: r.OrgName || '', Program: r.Program || '', Active: r.Active}));
+      CMT_DATA_SOURCE = sourceLabel;
+      deriveProgramCodeMap();
+      saveMetadataGenToStorage();
+      toast('Loaded ' + CMT_DATA.length + ' cost center rows.');
+      rebuildPanel('setup');
+      rebuildPanel('project');
+    },
+    onClear: () => { CMT_DATA = null; CMT_DATA_SOURCE = 'Not loaded'; deriveProgramCodeMap(); saveMetadataGenToStorage(); toast('Cleared CMT.csv.'); rebuildPanel('setup'); rebuildPanel('project'); }
+  }));
+  if(CMT_DATA && PROGRAM_CMT_CODE_DEBUG.length){
+    const mapTbl = h('table', {class:'review-table', style:'margin-top:10px;'});
+    mapTbl.appendChild(h('tr',{},[h('td',{},[h('strong',{},['FWS Program'])]),h('td',{},[h('strong',{},['Derived letter'])]),h('td',{},[h('strong',{},['Matched rows'])])]));
+    PROGRAM_CMT_CODE_DEBUG.forEach(d => {
+      mapTbl.appendChild(h('tr',{},[h('td',{},[d.program]), h('td',{},[d.letter]), h('td',{},[String(d.totalRowsMatched)])]));
+    });
+    cmtCard.appendChild(h('div',{class:'subsection-label'},['Derived FWS Program \u2192 CMT_CCCode5 mapping']));
+    cmtCard.appendChild(mapTbl);
+    const unmapped = OPT_PROGRAM.filter(p => !PROGRAM_CMT_CODE_DERIVED[p] && !PROGRAM_CMT_CODE_OVERRIDE[p]);
+    if(unmapped.length){
+      cmtCard.appendChild(h('div', {class:'note'}, ['No matching rows found in CMT.csv for: ', h('strong',{},[unmapped.join(', ')]), '. Cost Center filtering will fall back to Region-only when one of these Programs is selected. If CMT.csv\u2019s Program column uses different wording than the FWS Program dropdown, add an entry to PROGRAM_CMT_CODE_OVERRIDE in the script.']));
+    }
+  } else if(CMT_DATA){
+    cmtCard.appendChild(h('div', {class:'note'}, ['Loaded, but no FWS Program could be matched against this file\u2019s Program column \u2014 Cost Center filtering will use Region only. Check that CMT.csv has a Program column with recognizable text (e.g. containing "Ecological Services", "Migratory Birds", etc.), or add entries to PROGRAM_CMT_CODE_OVERRIDE in the script.']));
+  }
+  p.appendChild(cmtCard);
 
   /* ---- Contacts export ---- */
   const contactsCard = h('div', {class:'card'});
@@ -2018,10 +2272,10 @@ function buildSetupPanel(){
   }));
   p.appendChild(contactsCard);
 
-  /* ---- FWS Region / Program contacts ---- */
+  /* ---- FWS Region / Program contacts (org record LOOKUP export -- IDs themselves are hardcoded) ---- */
   const rpCard = h('div', {class:'card'});
   rpCard.appendChild(h('h3',{},['FWS Region / Program Contacts']));
-  rpCard.appendChild(h('p',{class:'card-desc'},['The mdEditor export of the FWS Region and FWS Program organization contact records (see FWSRegion_Program_Contacts_mdeditor-*.json). Used to add the project\u2019s selected Region/Program as administrator/distributor/publisher contacts on generated metadata.']));
+  rpCard.appendChild(h('p',{class:'card-desc'},['The mdEditor export containing the FWS Region and FWS Program organization contact RECORDS (full name/address/etc., not just an ID). The IDs used to find the right record in this file are hardcoded in the script (REGION_CONTACT_ID / PROGRAM_CONTACT_ID) \u2014 loading this file lets those records be embedded in generated metadata; without it, role references still work but with only a bare contact ID.']));
   rpCard.appendChild(buildFileUrlLoader({
     label: 'FWS Region / Program contacts (JSON)',
     desc: 'Same file format as the contacts export above, scoped to just the Region/Program org records.',
@@ -2084,7 +2338,7 @@ function buildSetupPanel(){
     ]));
   }
 
-  const snippetArea = h('textarea', {rows:'7', readonly:'readonly', style:'font-family:var(--mono); font-size:11.5px; white-space:pre;'});
+  const snippetArea = h('textarea', {rows:'8', readonly:'readonly', style:'font-family:var(--mono); font-size:11.5px; white-space:pre;'});
   function refreshSnippet(){ snippetArea.value = buildNotebookSettingsSnippet(); }
 
   const pyFields = [
@@ -2092,7 +2346,7 @@ function buildSetupPanel(){
     ['contactFolder', 'Contacts directory', 'Folder the notebook scans for the most recently-dated contacts export file', 'folder'],
     ['tmpDir', 'mdJSON templates folder', 'Folder containing the mdEd_*.txt / project.txt / product.txt template files', 'folder'],
     ['dmpSpreadsheet', 'National DMPs Excel file', 'Path to the SharePoint-synced National_DMPs.xlsx used for the SharePoint list import', 'file'],
-    ['regionProgramContactsPath', 'Region/Program contacts export path', 'Path the desktop app reads directly to resolve Region/Program admin contacts (FWSRegion_Program_Contacts_mdeditor-*.json)', 'file'],
+    ['regionProgramContactsPath', 'Region/Program contacts export path', 'Path the desktop app reads directly for full Region/Program org contact records (FWSRegion_Program_Contacts_mdeditor-*.json) \u2014 the IDs themselves are hardcoded in region_program_contacts.py', 'file'],
     ['contactsExportPath', 'Contacts export path (desktop app)', 'Path the desktop app reads directly to match contacts by email \u2014 separate from the copy loaded above, which only feeds the browser-only draft generator', 'file']
   ];
   pyFields.forEach(([key,label,hint,kind]) => {
@@ -2351,9 +2605,9 @@ function buildDmpDocumentHTML(){
   parts.push(docField('Data review schedule', s.storage.reviewSchedule));
   parts.push('</div>');
 
-  // 6. Distribution
-  parts.push('<div class="doc-section"><h2>6. Distribution</h2>');
-  parts.push(docField('Regional Data Repository', s.distribution.rdrChecked ? (s.distribution.rdrURL || 'Requested (folder to be created)') : 'Not used'));
+  // 6. Preservation & Distribution
+  parts.push('<div class="doc-section"><h2>6. Preservation &amp; Distribution</h2>');
+  parts.push(docField('Internal Preservation Repository', s.distribution.rdrChecked ? (s.distribution.rdrURL || 'Requested (folder to be created)') : 'Not used'));
   if(s.distribution.repositories.length){
     parts.push('<div class="doc-label">Public data sharing repositories</div>');
     s.distribution.repositories.forEach(function(r){
@@ -2444,16 +2698,16 @@ const DRAFT_NOTICE_TEXT =
   'DRAFT preview, generated entirely in the browser (no Python runtime is available inside this ' +
   'offline HTML file). The field-mapping logic is a line-for-line JavaScript port of ' +
   'dmp_json_to_dataframe.py. Contacts are resolved against the contacts / Region-Program files ' +
-  'loaded in the interface, using the same matching rules as the notebook and ' +
-  'region_program_contacts.py: matched by email (contacts) or exact org name (region/program); ' +
-  'unmatched people/orgs get a new, validly-shaped mdEditor contact record instead of a placeholder ' +
-  'name. If "Attach profiles & schemas" was enabled, the fetched JSON is included under ' +
-  'profilesSchemas. What this does NOT do: reproduce mdEditor\'s own internal record/profile/schema ' +
-  'ID envelope (those are assigned by mdEditor itself), extract a PRIMR ID from the RDR path, embed ' +
-  'geoJSON geometry from a local spatial file, or write the SharePoint Excel export. For a fully ' +
-  'resolved, import-ready mdEditor file (and the SharePoint export), run ' +
-  'DMP_to_metadata_from_interface.ipynb against the exported dmp_data.json -- or use the desktop ' +
-  'app build (dmp_desktop_app.py), which calls the real Python scripts directly.';
+  'loaded in the interface; FWS Region/Program contact IDs are hardcoded (REGION_CONTACT_ID / ' +
+  'PROGRAM_CONTACT_ID), with name-matching as a fallback. Unmatched people/orgs get a new, ' +
+  'validly-shaped mdEditor contact record instead of a placeholder name. If "Attach profiles & ' +
+  'schemas" was enabled, the fetched JSON is included under profilesSchemas. What this does NOT ' +
+  'do: reproduce mdEditor\'s own internal record/profile/schema ID envelope (those are assigned by ' +
+  'mdEditor itself), extract a PRIMR ID from the RDR path, embed geoJSON geometry from a local ' +
+  'spatial file, or write the SharePoint Excel export. For a fully resolved, import-ready mdEditor ' +
+  'file (and the SharePoint export), run DMP_to_metadata_from_interface.ipynb against the exported ' +
+  'dmp_data.json -- or use the desktop app build (dmp_desktop_app.py), which calls the real Python ' +
+  'scripts directly.';
 
 function fetchAllProfilesSchemas(){
   const cfg = METADATA_GEN_SETTINGS;
@@ -2554,7 +2808,7 @@ function buildProjectRecord(resolved, projectUuid, productUuids){
       resourceDistribution: resourceDistribution,
       resourceInfo: {
         abstract: proj.abstract || undefined,
-        purpose: proj.purpose || undefined, // NEW -- maps DMP "Purpose" field to mdJSON resourceInfo.purpose
+        purpose: proj.purpose || undefined,
         citation: {
           date: dateArr.length ? dateArr : undefined,
           title: proj.title || 'Untitled project',
@@ -2681,8 +2935,8 @@ function buildDraftMetadataBundle(){
 
   const contactsOut = [];
   const seen = {};
-  (CONTACTS_EXPORT || []).forEach(c => {
-    if(referencedContactUuids.has(c.uuid) && !seen[c.uuid]){ seen[c.uuid] = true; contactsOut.push(c.rawRecord); }
+  [...(CONTACTS_EXPORT || []), ...(REGION_PROGRAM_EXPORT || [])].forEach(c => {
+    if(referencedContactUuids.has(c.uuid) && !seen[c.uuid] && c.rawRecord){ seen[c.uuid] = true; contactsOut.push(c.rawRecord); }
   });
 
   const finish = (profilesSchemas) => ({
