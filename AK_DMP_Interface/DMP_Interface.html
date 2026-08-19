@@ -1605,7 +1605,7 @@ function buildContactsPanel(idx){
   p.appendChild(panelHead('Section 3', 'Personnel & Contacts',
     'Provide a name, email, and role for staff involved in managing the data of this project.'));
 
-  p.appendChild(card('Primary Contact for the DMP *', 'Person who serves as the point of contact for this data management plan, e.g. project manager or coordinator.', [
+  p.appendChild(card('Primary Contact for the DMP *', 'Person who serves as the point of contact for the project, its data and products, e.g. project manager or coordinator.', [
     grid(2, [
       fieldWrap('First name', true, null, textInput(c.primary,'firstName')),
       fieldWrap('Last name', true, null, textInput(c.primary,'lastName')),
@@ -1618,7 +1618,7 @@ function buildContactsPanel(idx){
     fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.primary,'org'))
   ]));
 
-  p.appendChild(card('Data Steward *', 'Highly knowledgeable regarding the project and datasets; responsible for reviewing data products and metadata for quality and completeness (this is the pointOfContact in mdEditor).', [
+  p.appendChild(card('Data Steward *', 'Highly knowledgeable regarding the project and datasets; responsible for reviewing data products and metadata for quality and completeness (aka pointOfContact in mdEditor).', [
     grid(2, [
       fieldWrap('First name', true, null, textInput(c.steward,'firstName')),
       fieldWrap('Last name', true, null, textInput(c.steward,'lastName')),
@@ -1631,7 +1631,7 @@ function buildContactsPanel(idx){
     fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.steward,'org'))
   ]));
 
-  p.appendChild(card('Data Custodian *', 'Ensures that data and metadata are preserved and maintained in accordance with the DMP, e.g. data manager or lead biologist (this is the custodian in mdEditor).', [
+  p.appendChild(card('Data Custodian *', 'Ensures that data and metadata are preserved and maintained in accordance with standards and policy, e.g. data manager (aka custodian in mdEditor).', [
     grid(2, [
       fieldWrap('First name', true, null, textInput(c.custodian,'firstName')),
       fieldWrap('Last name', true, null, textInput(c.custodian,'lastName')),
@@ -1645,7 +1645,7 @@ function buildContactsPanel(idx){
     fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.custodian,'org'))
   ]));
 
-  p.appendChild(card('Data Trustee *', 'Responsible for ensuring resources (staff, funding) are adequate to complete data management, e.g. Field Office Supervisor or program manager (this is the owner in mdEditor).', [
+  p.appendChild(card('Data Trustee *', 'Responsible for ensuring resources (staff, funding) are adequate to complete data management, e.g. Field Office Supervisor or program manager (aka owner in mdEditor).', [
     grid(2, [
       fieldWrap('First name', true, null, textInput(c.trustee,'firstName')),
       fieldWrap('Last name', true, null, textInput(c.trustee,'lastName')),
