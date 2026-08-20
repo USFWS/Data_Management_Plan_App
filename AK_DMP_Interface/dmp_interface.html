@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2431,8 +2431,8 @@ function buildReviewPanel(idx){
   if(DESKTOP_MODE){
     btnRow.appendChild(h('button', {class:'btn btn-primary', onclick:doRunMetadataDraftDesktop}, ['Run metadata draft creator']));
   }
-  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:doExportDraftMetadata}, [DESKTOP_MODE ? 'Export draft metadata (JS fallback)' : 'Export draft metadata']));
-  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:doExport}, ['Export data file (.json)']));
+  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:doExportDraftMetadata}, [DESKTOP_MODE ? 'Preview DMP (JS fallback)' : 'Preview DMP']));
+  btnRow.appendChild(h('button', {class:'btn btn-ghost', onclick:doExport}, ['Export DMP.JSON']));
   exportCard.appendChild(btnRow);
   p.appendChild(exportCard);
 
@@ -2827,8 +2827,7 @@ function buildDmpDocumentHTML(){
   parts.push(
     '<div class="doc-masthead">'
     + '<div class="doc-eyebrow">USFWS · Alaska Region</div>'
-    + '<h1 class="doc-title">'+escapeHtml(s.project.title || 'Untitled Project')+'</h1>'
-    + '<div class="doc-subtitle">Data Management Plan</div>'
+    + '<h1 class="doc-title">Data Management Plan for '+escapeHtml(s.project.title || 'Untitled Project')+'</h1>'
     + '</div>'
   );
 
