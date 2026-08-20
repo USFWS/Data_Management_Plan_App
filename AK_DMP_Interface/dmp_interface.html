@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2420,11 +2420,12 @@ function buildReviewPanel(idx){
   const exportCard = h('div', {class:'card'});
   exportCard.appendChild(h('h3',{},['Export']));
   exportCard.appendChild(h('p', {class:'card-desc'}, [
-    h('strong',{},['Export DMP']), ' opens your browser\'s print dialog with a formatted version of this plan (choose "Save as PDF" as the destination). ',
+    h('strong',{},['Export DMP']), ' opens your browser\'s print dialog to save a human-readable version of this plan (choose "Save as PDF" as the destination).', h('br'),
     DESKTOP_MODE
-      ? h('span',{},[h('strong',{},['Run metadata draft creator']), ' calls the REAL ', h('code',{},['dmp_json_to_dataframe.py']), ' and ', h('code',{},['region_program_contacts.py']), ' directly (see ', h('code',{},['dmp_desktop_app.py']), ') \u2014 no JavaScript approximation. It resolves contacts against the files configured on the Setup tab, resolves FWS Region/Program admin contacts, and saves the result via a native Save dialog.'])
-      : h('span',{},[h('strong',{},['Export draft metadata']), ' runs a JavaScript port of ', h('code',{},['dmp_json_to_dataframe.py']), '\u2019s field mapping, resolving contacts against the files loaded on the Setup tab and the FWS Region/Program admin contacts using the hardcoded ID tables. It produces real mdJSON content, but not mdEditor\u2019s internal record/profile envelope, so treat it as a thorough draft, not a guaranteed drag-and-drop mdEditor import. (Running the desktop app build instead calls the real Python scripts directly \u2014 see ', h('code',{},['dmp_desktop_app.py']), '.)']),
-    ' Either way, hand ', h('code',{},['dmp_data.json']), ' to the DMP_to_metadata notebook for the fully resolved, import-ready file.'
+      ? h('span',{},[h('strong',{},['Run metadata draft creator']), ' calls the real Python bridge scripts directly and saves mdJSON-style content via a native Save dialog.'])
+      : h('span',{},[h('strong',{},['Preview DMP']), ' displays mdJSON-style content.']),
+    h('br'),
+    h('strong',{},['Export DMP.JSON']), ' creates the needed file for use in the DMP_to_metadata notebook to write the fully resolved, import-ready mdJSON metadata file.'
   ]));
   const btnRow = h('div', {style:'display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;'});
   btnRow.appendChild(h('button', {class:'btn btn-primary', onclick:exportDmpDocument}, ['Export DMP']));
