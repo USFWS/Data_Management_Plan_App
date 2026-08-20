@@ -1,11 +1,11 @@
 # AK Region DMP Interface
 
-This replaces `AK_DMP_Template_v1_3.docx` as the way projects fill out a Data
-Management Plan. Instead of typing into Word content-control boxes, you fill
+This replaces `AK_DMP_Template_v1_3.docx` as a tool for data stewards to fill out a Data
+Management Plan. Instead of typing into Word content-control boxes, staff can fill
 out a form in your browser (or in a small desktop app — see below).
 Everything else about the pipeline — the contact-matching, the mdEditor JSON
 generation, and the National DMP SharePoint export — is unchanged, and still
-happens in `DMP_to_metadata_from_interface.ipynb`.
+happens in `DMP_to_metadata_from_interface.ipynb` notebook.
 
 ## What's in this folder
 
@@ -16,15 +16,14 @@ happens in `DMP_to_metadata_from_interface.ipynb`.
 | `dmp_json_to_dataframe.py` | Bridge script. Turns the interface's JSON export into the same dataframe the notebook used to get by scraping a Word doc. |
 | `DMP_to_metadata_from_interface.ipynb` | A copy of `DMP_to_metadata.ipynb` with the Word-scraping cells swapped for the JSON bridge. Everything from "Pulling contacts" onward is untouched. |
 | `region_program_contacts.py` | Resolves the interface's "FWS Region" and "FWS Program" selections into mdEditor contact UUIDs. IDs are hardcoded (see below) — no CSV file is required. |
-| `FWSRegion_Program_Contacts_mdeditor-*.json` | mdEditor export of the FWS Region and FWS Program organization contact records. Loading this on the Setup tab lets the *full* contact record be embedded in generated metadata, not just a bare ID. |
+| `FWSRegion_Program_Contacts_mdeditor-*.json` | mdEditor export of the FWS Region and FWS Program organization contact records. Loading this on the Setup tab lets the *full* contact record be embedded in generated metadata, not just a bare ID. This is also use for filtering cost center codes.|
 | `repository_options.csv` | Editable list of "Public Data Sharing Repositories" options for the dropdown in Preservation & Distribution. Edit this in Excel and load it into the interface's Setup tab to update the list. |
 | `dmp_desktop_app.py` | Optional desktop wrapper (pywebview). Runs the same interface in a native window with real Python behind it — see "Desktop app" below. |
 | `requirements.txt` | Python packages needed for the desktop app (`pywebview`, `pandas`). |
-| `Setup_And_Run_Desktop_App.bat` | Double-click to install the desktop app's requirements (first run only) and launch it. |
+| `Setup_And_Run_Desktop_App.bat` | Double-click to install the desktop app's requirements (first run only) and launch it. The computer should already have the base python installed. |
 
 **Not shipped in this folder, but referenced by the interface:** `CMT.csv`
-(your organization's cost center directory — large and specific to your
-region, so it isn't checked into this repo). You load it once on the Setup
+(your organization's cost center directory). Load it once on the Setup
 tab; see "Cost Center filtering" below.
 
 Nothing here requires a server or an internet connection to run. The `.html`
@@ -43,15 +42,17 @@ locked-down federal machine as anywhere else.
    - **Purpose** (Project Details, optional) — a brief statement of *why*
      the project or its data are being collected, distinct from the
      Abstract (which summarizes *what* the project is). Maps to the mdJSON
-     `metadata.resourceInfo.purpose` field.
+     `metadata.resourceInfo.purpose` field.  This supports meeting the ISO metadata standard.
    - **Preservation & Distribution** and **Records Schedule** are now two
      separate tabs (Sections 6 and 7) instead of one combined tab.
+     NOTE:  records schedule is currently without the dropdown list and auto-populate function 
+     as I wait for the 2026 updated records schedule to be published, due in September.
 
    Repeatable items (extra contacts, products, originators, records
    schedules, etc.) have a **"+ Add"** button, matching the old template's
    `[+]` content-control behavior.
 3. A **⚙ Setup** entry sits below the numbered sections, visually separated
-   as "Configuration" — this is where you point the interface at your
+   as "Configuration" — this is where you set URLs in the interface at your
    organization's shared files (see "Setup tab" below). Nothing entered
    there is written into your DMP data; it's pipeline configuration, kept
    separate on purpose.
@@ -60,36 +61,42 @@ locked-down federal machine as anywhere else.
    **"Load JSON…"** to resume a draft you exported earlier, or to hand a
    partially-completed plan to a colleague.
 5. On the **Review & Export** screen, check the completeness list, then use
-   one of the export options (see "Exporting" below).
+   one of the export options (see "Exporting" below) to export the JSON file to pass
+   to your data manager.  Use the ***Export DMP*** button to write a human=readable version of your
+   Data Management Plan to file in your project preservation folder in your internal
+   data repository (i.e. Alaska Regional Data Repository).
 
 ## Setup tab
 
 Everything the interface can load from an external file lives here, in one
-place, so it isn't scattered across sections:
+place, so it iS easy to find, not scattered across sections:
 
 - **Public Repository Dropdown List** — the same `repository_options.csv`
-  mechanism as before.
+  a csv file of repository options.
 - **Cost Center Directory (`CMT.csv`)** — see "Cost Center filtering" below.
+  This is used to populate the cost center codes.  Select region and program first
+  to take advantage of the built-in filtering.
 - **Contacts Export** — an mdEditor contacts export, used to match this
   DMP's personnel by email during draft metadata generation (see
   "Exporting" below) so real contact UUIDs get reused instead of
-  duplicated.
+  duplicated.  Check with your data manager since they likely keep a master list
+  of contacts for your region or program.
 - **FWS Region / Program Contacts** — the full mdEditor contact *records*
-  for FWS Regions/Programs (not just an ID — see next section). Optional:
-  role references still work without it, using just the hardcoded ID.
+  for FWS Regions/Programs (not just an ID — see next section). These are standardized 
+  program and regional contact information for all FWS to use.  
+  Optional: role references still work without it, using just the hardcoded UUID.
 - **Profile & Schema Attachments** — optional; if enabled, fetches the
   mdEditor profile/schema JSON from GitHub and includes it in a draft
   metadata export for reference. Requires outbound internet access.
 - **Python Pipeline Paths** — reference locations (bridge script folder,
   contacts directory, template folder, spreadsheet path) for the full
-  notebook pipeline. In the browser build these are copy-paste text only —
+  notebook pipeline. In the browser build, these are copy-paste text only since
   the browser can't run Python. In the desktop app, these are used
   directly (with native **Browse…** buttons) and a **Copy to clipboard**
   button generates a ready-to-paste settings block for the notebook.
 
 All Setup tab choices persist in the browser's local storage on that
-computer, separately from `dmp_data.json`, so they survive "Clear form" and
-don't need to be re-entered every session.
+computer, so they survive "Clear form" and don't need to be re-entered every session.
 
 ## FWS Region and FWS Program contacts
 
@@ -124,7 +131,7 @@ way any other region does (see below).
 
 ## Cost Center filtering
 
-Project Details' Cost Center dropdown has **no built-in list** — it stays
+Project Detail Cost Center dropdown has **no built-in list** — it stays
 empty until you load `CMT.csv` on the Setup tab. This is intentional:
 fabricating cost center codes would be worse than requiring one real load
 per session.
@@ -174,7 +181,7 @@ time.
 file with no server, it can't silently read a CSV off disk on its own when
 opened via double-click (`file://`) — browsers block that for security
 reasons, so **Load CSV…** / **Browse file…** is the reliable way to update
-any of the Setup tab's files. If your organization ever hosts this folder
+any of the Setup tab's files. If the organization ever hosts this folder
 on an internal website instead of distributing it as a local file, the
 interface will automatically pick up the latest `repository_options.csv`
 on every page load with no manual step needed (this auto-fetch is specific
@@ -197,10 +204,10 @@ place.
 | Export data file (.json) | `DMP_JSON_<title>.json` | `DMP_JSON_Walrus_Haulout_Monitoring.json` |
 
 - **Export DMP** — opens your browser's print dialog with a formatted,
-  report-style rendering of the whole plan. Choose "Save as PDF" as the
-  destination to get an actual PDF — no library needed, still fully
-  offline-safe. This is the closest equivalent to printing the old Word
-  document. The interface sets the page title to the suggested filename
+  human-readable, report-style rendering of the whole plan. 
+  Choose "Save as PDF" as the destination to get an actual PDF — no library 
+  needed, still fully offline-safe. This is the closest equivalent to a Word document.
+  The interface sets the page title to the suggested filename
   before printing, so most browsers (Chrome/Edge) will pre-fill it in the
   "Save as PDF" dialog — but unlike the JSON exports, this isn't
   guaranteed, since the print dialog is controlled by the browser, not the
@@ -222,7 +229,7 @@ place.
   pattern as the browser build's draft export, since both produce the same
   kind of file.
 - **Export data file (.json)** — the file that actually matters for the
-  full pipeline. Hand this to the notebook (see below) for the fully
+  full pipeline. Hand this to the Jupyter notebook (see below) for the fully
   resolved, import-ready mdEditor file and the SharePoint list export.
 
 Renaming the downloaded file afterward is always fine — nothing about the
@@ -233,9 +240,9 @@ in the notebook settings just needs to point at wherever you saved it.
 
 You have two options:
 
-**Option A — use the pre-modified notebook (recommended).**
+**Option A — use the accompanying notebook (recommended).**
 Open `DMP_to_metadata_from_interface.ipynb` instead of the original
-notebook. In the first cell, set:
+Word Template notebook. In the first cell, set:
 
 ```python
 dmp_json_path = r'C:\path\to\your_exported_file.json'
@@ -244,11 +251,11 @@ region_program_contacts_path = r'C:\path\to\this_folder\FWSRegion_Program_Contac
 ```
 
 along with the same `contact_folder`, `tmp_dir`, `dmp_spreadsheet`, and
-profile/schema settings you were already using. (The Setup tab's "Python
-Pipeline Paths" card can generate this block for you — fill in the fields
-there and click **Copy to clipboard**.) Run the notebook top to bottom as
-before — the contacts matching, mdEditor JSON generation, and SharePoint
-export cells are byte-for-byte identical to the original.
+profile/schema settings you were already used in the Word Template notebook. 
+(The Setup tab's "Python Pipeline Paths" card can generate this block for you 
+— fill in the fields there and click **Copy to clipboard**.) Run the notebook 
+top to bottom as before — the contacts matching, mdEditor JSON generation, and 
+SharePoint export cells are byte-for-byte identical to the original.
 
 **Option B — patch your existing notebook.**
 If you'd rather keep using `DMP_to_metadata.ipynb` directly, replace the
@@ -319,13 +326,13 @@ the fields appeared in the original Word template — cross-reference against
 `AK_DMP_Template_v1_3.docx`'s content-control tags if you need to add one.
 
 The **Purpose** field (added under Project Details) is the most recent
-field addition and a good template to follow if you need to add another: it
-required a matching change in three places — `DMP_Interface.html` (the
+field addition and a good template to follow if there is need to add another new field:
+it required a matching change in three places — `DMP_Interface.html` (the
 form field, `bridgeBuildRows()`, and the draft mdJSON builder),
 `dmp_json_to_dataframe.py` (`projectPurpose`), and `dmp_desktop_app.py`
 (`_assemble_draft()`'s `resourceInfo` dict).
 
-Two fields predate the original Word template and don't map to a
+Two fields predate the original Word template and do not map to a
 content-control tag: **FWS Region** (top of Project Details → Program &
 Cost Center) and **Storage location URL** (top of Storage, Backup &
 Review). Both export as columns (`fwsRegion`, `storageLocationURL`) in the
@@ -344,10 +351,11 @@ README if the naming convention ever changes.
 ## Getting help
 
 Contact the [project maintainer](mailto:tamatha_patterson@fws.gov) for help with this repository. If you have general questions on creating repositories in the USFWS DGEC, reach out to a USFWS DGEC [owner](https://github.com/orgs/USFWS/people?query=role%3Aowner).
+Contact the [project originator](mailto:caylen_cummings@fws.gov) for help with the jupyter notebook scripts that generate draft mdJSON metadata.
 
 ## Contribute
 
-Contact the project maintainer for information about contributing to this repository. Submit a [GitHub Issue](https://github.com/USFWS/r7-repo-template/issues) to report a bug or request a feature or enhancement.
+Contact the project maintainer or originator for information about contributing to this repository. Submit a [GitHub Issue](https://github.com/USFWS/r7-repo-template/issues) to report a bug or request a feature or enhancement.
 
 -----
 
