@@ -3,7 +3,7 @@
     "name": "r7-repo-template",
     "organization": "U.S. Fish & Wildlife Service",
     "description": "R7 GitHub Repository Template",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "status": "Development",
 
     "permissions": {
@@ -36,8 +36,8 @@
     ],
 
     "contact": {
-      "name": "Your first and last name",
-      "email": "firstname_lastname@fws.gov"
+      "name": "Tamatha Patterson",
+      "email": "tamatha_patterson@fws.gov"
     },
 
     "date": {
