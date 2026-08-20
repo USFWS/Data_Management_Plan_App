@@ -235,6 +235,12 @@ select{appearance:none; -webkit-appearance:none; background-repeat:no-repeat; ba
 .metagen-subhead{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--spruce-2); margin:16px 0 4px 0; padding-top:14px; border-top:1px solid var(--line-soft);}
 .metagen-subhead:first-of-type{border-top:none; padding-top:0; margin-top:0;}
 
+/* contact picker */
+.contact-picker{margin:0 0 14px 0; padding:11px 12px; background:var(--glacier); border:1px dashed var(--spruce-3); border-radius:6px;}
+.contact-picker .cp-label{font-size:11.5px; font-weight:700; color:var(--spruce); margin-bottom:6px;}
+.contact-picker select{background-color:#fff;}
+.contact-picker .cp-hint{font-size:11px; color:var(--ink-soft); margin-top:5px; line-height:1.4;}
+
 /* toast */
 #toast{
   position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -975,6 +981,11 @@ function buildNotebookSettingsSnippet(){
   ].join('\n');
 }
 
+// Parses an mdEditor contacts export into a flat lookup list. Each entry
+// keeps `inner` (the fully-parsed inner contact JSON: name, phone,
+// electronicMailAddress, positionName, contactType, memberOfOrganization,
+// etc.) so the contact-picker feature (see attachContactPicker below) can
+// pull any of those fields when a contact is selected, not just email.
 function parseContactsExportJSON(rawObj){
   const list = [];
   const arr = (rawObj && Array.isArray(rawObj.data)) ? rawObj.data : [];
@@ -987,6 +998,7 @@ function parseContactsExportJSON(rawObj){
         isOrganization: !!inner.isOrganization,
         emails: (inner.electronicMailAddress || []).map(e => String(e).toLowerCase()),
         memberOfOrganization: inner.memberOfOrganization || [],
+        inner: inner,
         rawRecord: rec
       });
     }catch(e){ /* skip malformed/unexpected entries */ }
@@ -1233,6 +1245,7 @@ function buildStubContactRecord(person, opts){
     uuid: uuid, name: name, isOrganization: !!opts.isOrganization,
     emails: (!opts.isOrganization && person.email) ? [String(person.email).toLowerCase()] : [],
     memberOfOrganization: opts.orgUuid ? [opts.orgUuid] : [],
+    inner: inner,
     rawRecord: outer
   };
 }
@@ -1272,6 +1285,97 @@ function resolveContact(person){
 }
 
 function roleEntry(contact, role){ return {party: [{contactId: contact.uuid}], role: role}; }
+
+/* =========================================================================
+   CONTACT PICKER -- lets someone choose an existing person from the
+   contacts export loaded on the Setup tab and auto-fill a personnel
+   block's fields, instead of retyping name/email/phone/org from scratch.
+
+   Rules, deliberately conservative:
+   - Only individuals (isOrganization === false) appear in the dropdown.
+   - Only fields present on the matched contact are written -- an empty
+     phone/org/position on the contact record never blanks out something
+     the person already typed.
+   - The "Non-DOI employee" checkbox (Custodian, Originators) is only set
+     when the contact record's contactType is present AND is something
+     other than "federal" -- absence of that field is treated as unknown,
+     not as "true" or "false", since guessing wrong on an official record
+     is worse than leaving it for manual entry.
+   ========================================================================= */
+function orgNameFromInner(inner){
+  if(!inner || !Array.isArray(inner.memberOfOrganization) || inner.memberOfOrganization.length === 0) return '';
+  const names = inner.memberOfOrganization
+    .map(orgUuid => {
+      const org = (CONTACTS_EXPORT || []).find(c => c.isOrganization && c.uuid === orgUuid)
+               || (REGION_PROGRAM_EXPORT || []).find(c => c.isOrganization && c.uuid === orgUuid);
+      return org ? org.name : null;
+    })
+    .filter(Boolean);
+  return names.join('; ');
+}
+
+// `inputs` maps field names to the actual <input>/<select>/<checkbox> DOM
+// elements already on the page for this person block, e.g.
+// {firstName: <input>, lastName: <input>, email: <input>, phone: <input>,
+//  org: <input>, position: <input>, nonDOI: <input type=checkbox>}.
+// Only include the keys that exist for that particular role (e.g. Trustee
+// has no `org` field, so its call site omits that key).
+function attachContactPicker(personObj, inputs){
+  const list = (CONTACTS_EXPORT || []).filter(c => !c.isOrganization);
+  if(list.length === 0) return null; // nothing loaded on Setup yet -- don't render an empty picker
+
+  const sel = h('select', {});
+  sel.appendChild(h('option', {value:''}, ['Select from contacts…']));
+  list
+    .slice()
+    .sort((a,b) => (a.name||'').localeCompare(b.name||''))
+    .forEach(c => {
+      const label = c.emails && c.emails.length ? (c.name + ' — ' + c.emails[0]) : (c.name || 'Unnamed contact');
+      sel.appendChild(h('option', {value:c.uuid}, [label]));
+    });
+
+  sel.addEventListener('change', () => {
+    const uuid = sel.value;
+    if(!uuid) return;
+    const match = list.find(c => c.uuid === uuid);
+    if(!match){ sel.value = ''; return; }
+    const inner = match.inner || {};
+
+    function setIf(key, value){
+      if(!inputs[key] || value === undefined || value === null || value === '') return;
+      personObj[key] = value;
+      inputs[key].value = value;
+    }
+
+    const nameParts = (inner.name || match.name || '').trim().split(/\s+/);
+    if(nameParts.length && nameParts[0]){
+      setIf('firstName', nameParts[0]);
+      setIf('lastName', nameParts.slice(1).join(' '));
+    }
+    const email = Array.isArray(inner.electronicMailAddress) && inner.electronicMailAddress.length ? inner.electronicMailAddress[0] : '';
+    setIf('email', email);
+    const phone = Array.isArray(inner.phone) && inner.phone.length ? (inner.phone[0].phoneNumber || '') : '';
+    setIf('phone', phone);
+    setIf('position', inner.positionName || '');
+    setIf('org', orgNameFromInner(inner));
+
+    if(inputs.nonDOI && inner.contactType){
+      const isNonDOI = String(inner.contactType).toLowerCase() !== 'federal';
+      personObj.nonDOI = isNonDOI;
+      inputs.nonDOI.checked = isNonDOI;
+    }
+
+    onDirty();
+    sel.value = '';
+  });
+
+  const wrap = h('div', {class:'contact-picker'}, [
+    h('div', {class:'cp-label'}, ['Select from contacts']),
+    sel,
+    h('div', {class:'cp-hint'}, ['Auto-fills the fields below from the contacts export loaded on the Setup tab. You can still edit any field afterward, or skip this and type directly.'])
+  ]);
+  return wrap;
+}
 
 /* =========================================================================
    SMALL DOM HELPERS
@@ -1605,55 +1709,92 @@ function buildContactsPanel(idx){
   p.appendChild(panelHead('Section 3', 'Personnel & Contacts',
     'Provide a name, email, and role for staff involved in managing the data of this project.'));
 
+  // --- Primary Contact ---
+  const primFirst = textInput(c.primary,'firstName');
+  const primLast = textInput(c.primary,'lastName');
+  const primPos = textInput(c.primary,'position');
+  const primEmail = textInput(c.primary,'email',{type:'email'});
+  const primPhone = textInput(c.primary,'phone',{type:'tel'});
+  const primOrg = textInput(c.primary,'org');
+  const primPicker = attachContactPicker(c.primary, {firstName:primFirst, lastName:primLast, email:primEmail, phone:primPhone, position:primPos, org:primOrg});
   p.appendChild(card('Primary Contact for the DMP *', 'Person who serves as the point of contact for the project, its data and products, e.g. project manager or coordinator.', [
+    primPicker,
     grid(2, [
-      fieldWrap('First name', true, null, textInput(c.primary,'firstName')),
-      fieldWrap('Last name', true, null, textInput(c.primary,'lastName')),
+      fieldWrap('First name', true, null, primFirst),
+      fieldWrap('Last name', true, null, primLast),
     ]),
     grid(3, [
-      fieldWrap('Position', false, null, textInput(c.primary,'position')),
-      fieldWrap('Email', true, null, textInput(c.primary,'email',{type:'email'})),
-      fieldWrap('Phone', false, null, textInput(c.primary,'phone',{type:'tel'})),
+      fieldWrap('Position', false, null, primPos),
+      fieldWrap('Email', true, null, primEmail),
+      fieldWrap('Phone', false, null, primPhone),
     ]),
-    fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.primary,'org'))
+    fieldWrap('Organization (if non-USFWS)', false, null, primOrg)
   ]));
 
+  // --- Data Steward ---
+  const stwFirst = textInput(c.steward,'firstName');
+  const stwLast = textInput(c.steward,'lastName');
+  const stwPos = textInput(c.steward,'position');
+  const stwEmail = textInput(c.steward,'email',{type:'email'});
+  const stwPhone = textInput(c.steward,'phone',{type:'tel'});
+  const stwOrg = textInput(c.steward,'org');
+  const stwPicker = attachContactPicker(c.steward, {firstName:stwFirst, lastName:stwLast, email:stwEmail, phone:stwPhone, position:stwPos, org:stwOrg});
   p.appendChild(card('Data Steward *', 'Highly knowledgeable regarding the project and datasets; responsible for reviewing data products and metadata for quality and completeness (aka pointOfContact in mdEditor).', [
+    stwPicker,
     grid(2, [
-      fieldWrap('First name', true, null, textInput(c.steward,'firstName')),
-      fieldWrap('Last name', true, null, textInput(c.steward,'lastName')),
+      fieldWrap('First name', true, null, stwFirst),
+      fieldWrap('Last name', true, null, stwLast),
     ]),
     grid(3, [
-      fieldWrap('Position', false, null, textInput(c.steward,'position')),
-      fieldWrap('Email', true, null, textInput(c.steward,'email',{type:'email'})),
-      fieldWrap('Phone', false, null, textInput(c.steward,'phone',{type:'tel'})),
+      fieldWrap('Position', false, null, stwPos),
+      fieldWrap('Email', true, null, stwEmail),
+      fieldWrap('Phone', false, null, stwPhone),
     ]),
-    fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.steward,'org'))
+    fieldWrap('Organization (if non-USFWS)', false, null, stwOrg)
   ]));
 
+  // --- Data Custodian ---
+  const cusFirst = textInput(c.custodian,'firstName');
+  const cusLast = textInput(c.custodian,'lastName');
+  const cusPos = textInput(c.custodian,'position');
+  const cusEmail = textInput(c.custodian,'email',{type:'email'});
+  const cusPhone = textInput(c.custodian,'phone',{type:'tel'});
+  const cusOrg = textInput(c.custodian,'org');
+  const cusNonDOIRow = checkboxRow('Non-DOI employee', null, c.custodian, 'nonDOI');
+  const cusNonDOIInput = cusNonDOIRow.querySelector('input[type=checkbox]');
+  const cusPicker = attachContactPicker(c.custodian, {firstName:cusFirst, lastName:cusLast, email:cusEmail, phone:cusPhone, position:cusPos, org:cusOrg, nonDOI:cusNonDOIInput});
   p.appendChild(card('Data Custodian *', 'Ensures that data and metadata are preserved and maintained in accordance with standards and policy, e.g. data manager (aka custodian in mdEditor).', [
+    cusPicker,
     grid(2, [
-      fieldWrap('First name', true, null, textInput(c.custodian,'firstName')),
-      fieldWrap('Last name', true, null, textInput(c.custodian,'lastName')),
+      fieldWrap('First name', true, null, cusFirst),
+      fieldWrap('Last name', true, null, cusLast),
     ]),
     grid(3, [
-      fieldWrap('Position', false, null, textInput(c.custodian,'position')),
-      fieldWrap('Email', true, null, textInput(c.custodian,'email',{type:'email'})),
-      fieldWrap('Phone', false, null, textInput(c.custodian,'phone',{type:'tel'})),
+      fieldWrap('Position', false, null, cusPos),
+      fieldWrap('Email', true, null, cusEmail),
+      fieldWrap('Phone', false, null, cusPhone),
     ]),
-    checkboxRow('Non-DOI employee', null, c.custodian, 'nonDOI'),
-    fieldWrap('Organization (if non-USFWS)', false, null, textInput(c.custodian,'org'))
+    cusNonDOIRow,
+    fieldWrap('Organization (if non-USFWS)', false, null, cusOrg)
   ]));
 
+  // --- Data Trustee (no org field for this role) ---
+  const trFirst = textInput(c.trustee,'firstName');
+  const trLast = textInput(c.trustee,'lastName');
+  const trPos = textInput(c.trustee,'position');
+  const trEmail = textInput(c.trustee,'email',{type:'email'});
+  const trPhone = textInput(c.trustee,'phone',{type:'tel'});
+  const trPicker = attachContactPicker(c.trustee, {firstName:trFirst, lastName:trLast, email:trEmail, phone:trPhone, position:trPos});
   p.appendChild(card('Data Trustee *', 'Responsible for ensuring resources (staff, funding) are adequate to complete data management, e.g. Field Office Supervisor or program manager (aka owner in mdEditor).', [
+    trPicker,
     grid(2, [
-      fieldWrap('First name', true, null, textInput(c.trustee,'firstName')),
-      fieldWrap('Last name', true, null, textInput(c.trustee,'lastName')),
+      fieldWrap('First name', true, null, trFirst),
+      fieldWrap('Last name', true, null, trLast),
     ]),
     grid(3, [
-      fieldWrap('Position', false, null, textInput(c.trustee,'position')),
-      fieldWrap('Email', true, null, textInput(c.trustee,'email',{type:'email'})),
-      fieldWrap('Phone', false, null, textInput(c.trustee,'phone',{type:'tel'})),
+      fieldWrap('Position', false, null, trPos),
+      fieldWrap('Email', true, null, trEmail),
+      fieldWrap('Phone', false, null, trPhone),
     ])
   ]));
 
@@ -1663,21 +1804,31 @@ function buildContactsPanel(idx){
     itemLabel:(v,i)=> (v.firstName || v.lastName) ? (v.firstName+' '+v.lastName).trim() : 'Contact '+(i+1),
     emptyText:'No additional contacts added.', addLabel:'+ Add a contact', minItems:0,
     makeNew: emptyOtherContact,
-    renderItem:(item)=> h('div',{},[
-      grid(2, [
-        fieldWrap('First name', false, null, textInput(item,'firstName')),
-        fieldWrap('Last name', false, null, textInput(item,'lastName')),
-      ]),
-      grid(3, [
-        fieldWrap('Position', false, null, textInput(item,'position')),
-        fieldWrap('Email', false, null, textInput(item,'email',{type:'email'})),
-        fieldWrap('Phone', false, null, textInput(item,'phone',{type:'tel'})),
-      ]),
-      grid(2, [
-        fieldWrap('Role', false, null, selectInput(item,'role',OPT_CONTACT_ROLE,{placeholder:'Select a role...'})),
-        fieldWrap('Organization (if non-USFWS)', false, null, textInput(item,'org')),
-      ])
-    ])
+    renderItem:(item)=> {
+      const oFirst = textInput(item,'firstName');
+      const oLast = textInput(item,'lastName');
+      const oPos = textInput(item,'position');
+      const oEmail = textInput(item,'email',{type:'email'});
+      const oPhone = textInput(item,'phone',{type:'tel'});
+      const oOrg = textInput(item,'org');
+      const oPicker = attachContactPicker(item, {firstName:oFirst, lastName:oLast, email:oEmail, phone:oPhone, position:oPos, org:oOrg});
+      return h('div',{},[
+        oPicker,
+        grid(2, [
+          fieldWrap('First name', false, null, oFirst),
+          fieldWrap('Last name', false, null, oLast),
+        ]),
+        grid(3, [
+          fieldWrap('Position', false, null, oPos),
+          fieldWrap('Email', false, null, oEmail),
+          fieldWrap('Phone', false, null, oPhone),
+        ]),
+        grid(2, [
+          fieldWrap('Role', false, null, selectInput(item,'role',OPT_CONTACT_ROLE,{placeholder:'Select a role...'})),
+          fieldWrap('Organization (if non-USFWS)', false, null, oOrg),
+        ])
+      ]);
+    }
   });
 
   p.appendChild(panelFooter(idx));
@@ -1696,7 +1847,7 @@ function buildMetadataPanel(idx){
     otherTypeWrap.innerHTML = '';
     if(ms.other){
       const w = h('div');
-      w.appendChild(fieldWrap('Other metadata standard', false, null, comboInput(ms,'otherType',OPT_META_OTHER)));
+      w.appendChild(fieldWrap('Other metadata standard', true, null, comboInput(ms,'otherType',OPT_META_OTHER)));
       otherTypeWrap.appendChild(w);
     }
   };
@@ -1710,11 +1861,27 @@ function buildMetadataPanel(idx){
     otherTypeWrap
   ]));
 
+  // Default Data Standards to a single "Calendar Year" entry if the list
+  // is empty (covers both a brand-new DMP and an older saved draft created
+  // before this default existed). Only mutates state the first time this
+  // condition is true for a given draft -- once at least one entry exists,
+  // this is a no-op on every subsequent panel build.
+  if(state.dataStandards.length === 0){
+    state.dataStandards.push('Calendar Year');
+    onDirty();
+  }
+
   const dsContainer = h('div');
-  p.appendChild(card('Data Standards *', 'Data may be subject to Service-wide standards. Select all that apply.', [dsContainer]));
+  p.appendChild(card('Data Standards *',
+    h('span', {}, [
+      'Data standards help improve data quality and re-useability. FWS Data Standards are defined here: ',
+      h('a', {href:'https://www.fws.gov/data-standards', target:'_blank', rel:'noopener'}, ['https://www.fws.gov/data-standards']),
+      '. Select all that apply.'
+    ]),
+    [dsContainer]));
   renderRepeatable(dsContainer, state.dataStandards, {
     itemLabel:(v,i)=>'Standard '+(i+1), emptyText:'No data standard selected.', addLabel:'+ Add a data standard',
-    makeNew:()=>'Not Applicable',
+    makeNew:()=>'Calendar Year',
     renderItem:(v,i)=> {
       const sel = selectInput({get val(){return state.dataStandards[i];}, set val(x){state.dataStandards[i]=x;}}, 'val', OPT_DATA_STANDARD, {placeholder:'Select...'});
       sel.value = v;
@@ -1938,17 +2105,27 @@ function renderProductItem(prod){
     itemLabel:(v,i)=> (v.firstName||v.lastName) ? (v.firstName+' '+v.lastName).trim() : 'Originator '+(i+1),
     emptyText:'No originator added.', addLabel:'+ Add an originator', minItems:1,
     makeNew: emptyOriginator,
-    renderItem:(item)=> h('div',{},[
-      grid(2,[
-        fieldWrap('First name', true, null, textInput(item,'firstName')),
-        fieldWrap('Last name', true, null, textInput(item,'lastName')),
-      ]),
-      grid(2,[
-        fieldWrap('Email', false, null, textInput(item,'email',{type:'email'})),
-        fieldWrap('Organization (if non-USFWS)', false, null, textInput(item,'org')),
-      ]),
-      checkboxRow('Non-DOI employee', null, item, 'nonDOI')
-    ])
+    renderItem:(item)=> {
+      const oFirst = textInput(item,'firstName');
+      const oLast = textInput(item,'lastName');
+      const oEmail = textInput(item,'email',{type:'email'});
+      const oOrg = textInput(item,'org');
+      const oNonDOIRow = checkboxRow('Non-DOI employee', null, item, 'nonDOI');
+      const oNonDOIInput = oNonDOIRow.querySelector('input[type=checkbox]');
+      const oPicker = attachContactPicker(item, {firstName:oFirst, lastName:oLast, email:oEmail, org:oOrg, nonDOI:oNonDOIInput});
+      return h('div',{},[
+        oPicker,
+        grid(2,[
+          fieldWrap('First name', true, null, oFirst),
+          fieldWrap('Last name', true, null, oLast),
+        ]),
+        grid(2,[
+          fieldWrap('Email', false, null, oEmail),
+          fieldWrap('Organization (if non-USFWS)', false, null, oOrg),
+        ]),
+        oNonDOIRow
+      ]);
+    }
   });
 
   wrap.appendChild(fieldWrap('Quality Assurance', true, "Procedures used to prevent errors from entering the data (data collection protocols, training, forms). If described in a protocol/SOP, provide a URL instead. Type 'NA' if not relevant.", textareaInput(prod,'qualityAssurance',{rows:2})));
@@ -1963,12 +2140,22 @@ function renderProductItem(prod){
     itemLabel:(v,i)=> (v.firstName||v.lastName) ? (v.firstName+' '+v.lastName).trim() : 'Metadata author '+(i+1),
     emptyText:'No metadata author added.', addLabel:'+ Add a metadata author', minItems:1,
     makeNew: emptyMetaAuthor,
-    renderItem:(item)=> grid(2,[
-      fieldWrap('First name', true, null, textInput(item,'firstName')),
-      fieldWrap('Last name', true, null, textInput(item,'lastName')),
-      fieldWrap('Email', false, null, textInput(item,'email',{type:'email'})),
-      fieldWrap('Organization (if non-USFWS)', false, null, textInput(item,'org')),
-    ])
+    renderItem:(item)=> {
+      const aFirst = textInput(item,'firstName');
+      const aLast = textInput(item,'lastName');
+      const aEmail = textInput(item,'email',{type:'email'});
+      const aOrg = textInput(item,'org');
+      const aPicker = attachContactPicker(item, {firstName:aFirst, lastName:aLast, email:aEmail, org:aOrg});
+      return h('div',{},[
+        aPicker,
+        grid(2,[
+          fieldWrap('First name', true, null, aFirst),
+          fieldWrap('Last name', true, null, aLast),
+          fieldWrap('Email', false, null, aEmail),
+          fieldWrap('Organization (if non-USFWS)', false, null, aOrg),
+        ])
+      ]);
+    }
   });
 
   wrap.appendChild(h('div',{class:'subsection-label'},['Access restrictions *']));
@@ -2061,6 +2248,7 @@ function requiredChecks(){
   need(!!(c.trustee.firstName && c.trustee.lastName && c.trustee.email), 'Data Trustee (name & email)', 'contacts');
 
   need(s.metadataStandards.mdJSON || s.metadataStandards.other, 'A metadata standard', 'metadata');
+  need(!s.metadataStandards.other || !!s.metadataStandards.otherType, 'Other metadata standard (choose which standard, since "Other" is checked)', 'metadata');
   need(s.dataStandards.length > 0, 'At least one data standard', 'metadata');
 
   need(!!s.storage.reviewSchedule, 'Data review schedule', 'storage');
@@ -2253,7 +2441,7 @@ function buildSetupPanel(){
   /* ---- Contacts export ---- */
   const contactsCard = h('div', {class:'card'});
   contactsCard.appendChild(h('h3',{},['Contacts Export']));
-  contactsCard.appendChild(h('p',{class:'card-desc'},['An mdEditor contacts export. Used by "Export draft metadata" / "Run metadata draft creator" (on the Review & Export tab) to match this DMP\u2019s contacts by email and reuse their real UUIDs instead of creating duplicates.']));
+  contactsCard.appendChild(h('p',{class:'card-desc'},['An mdEditor contacts export. Used both by the Personnel & Contacts tab\u2019s "Select from contacts" pickers (auto-fills name/email/phone/org for a person) and by "Export draft metadata" / "Run metadata draft creator" (Review & Export tab) to match contacts by email and reuse their real UUIDs instead of creating duplicates.']));
   contactsCard.appendChild(buildFileUrlLoader({
     label: 'Contacts export (JSON)',
     desc: 'Matches the shape of your AK_contacts_profiles export.',
@@ -2487,14 +2675,14 @@ function doExport(){
   const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const safeName = (state.project.title || 'dmp_data').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  const titlePart = (state.project.title || 'untitled').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
   a.href = url;
-  a.download = (safeName || 'dmp_data') + '.json';
+  a.download = 'DMP_JSON_' + (titlePart || 'untitled') + '.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('Exported ' + a.download);
+  toast('Exported ' + a.download);  
 }
 
 /* =========================================================================
@@ -2683,8 +2871,14 @@ function exportDmpDocument(){
   const container = document.getElementById('print-doc');
   container.innerHTML = buildDmpDocumentHTML();
   document.body.classList.add('printing-dmp-doc');
+
+  const titlePart = (state.project.title || 'untitled').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  const originalTitle = document.title;
+  document.title = 'DMP_PDF_' + (titlePart || 'untitled');
+
   function cleanup(){
     document.body.classList.remove('printing-dmp-doc');
+    document.title = originalTitle;
     window.removeEventListener('afterprint', cleanup);
   }
   window.addEventListener('afterprint', cleanup);
@@ -2963,9 +3157,9 @@ function doExportDraftMetadata(){
     const blob = new Blob([JSON.stringify(bundle, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safeName = (state.project.title || 'dmp').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const titlePart = (state.project.title || 'untitled').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     a.href = url;
-    a.download = (safeName || 'dmp') + '_draft_metadata.json';
+    a.download = 'DMP_draft_' + (titlePart || 'untitled') + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -3001,7 +3195,8 @@ function doRunMetadataDraftDesktop(){
       alert('Metadata generation failed:\n\n' + result.error + (result.trace ? ('\n\n' + result.trace) : ''));
       return;
     }
-    const safeName = (state.project.title || 'dmp').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') + '_draft_metadata.json';
+    const titlePart = (state.project.title || 'untitled').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    const safeName = 'DMP_draft_' + (titlePart || 'untitled') + '.json';
     window.pywebview.api.save_text_file(safeName, JSON.stringify(result, null, 2)).then(path => {
       if(path){
         let msg = 'Saved to ' + path;
