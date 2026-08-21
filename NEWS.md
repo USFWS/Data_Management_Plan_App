@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file. The format 
 >-   *Mention whether you follow Semantic Versioning.*
 -->
 
-# Data_Management_Plan_App 0.2.2
+# Data_Management_Plan_App 0.2.3
 
 Browser application that assists FWS staff to create a Data Management Plan that 
 - meets FWS policy
@@ -27,8 +27,11 @@ Browser application that assists FWS staff to create a Data Management Plan that
 Version 2.1
  - Settings configuration where url to profiles and schemas, contacts, repository options, and corporate master table options, and pipeline paths
  - Region and program selection that filter the cost code dropdown list from the corporate master table
-Version 2.2
+Version 2.2 (19August2026)
  - added browse for file function where appropriate
+Version 2.3 (21August2026)
+ - added check box list of options for optional purpose section based on FWS Migratory Bird Program defined survey purposes
+ - added a default maintenance frequency as 'asNeeded' for both resourceInfo maintenance frequency and metadata maintenance frequency
 
 ## Changed
 
