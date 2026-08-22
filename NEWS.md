@@ -32,6 +32,7 @@ Version 2.2 (19August2026)
 Version 2.3 (21August2026)
  - added check box list of options for optional purpose section based on FWS Migratory Bird Program defined survey purposes
  - added a default maintenance frequency as 'asNeeded' for both resourceInfo maintenance frequency and metadata maintenance frequency
+ - added write corporate master table lookup to metadata/ Resource Information/ credit field for reference.
 
 ## Changed
 
